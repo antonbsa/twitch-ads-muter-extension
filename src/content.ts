@@ -1,13 +1,15 @@
-let settings = {};
+import type { Settings, LiveData, GetDataMessage, GetDataResponse } from './types';
 
-async function loadSettings() {
+let settings: Settings = {};
+
+async function loadSettings(): Promise<void> {
   try {
     const defaultsUrl = chrome.runtime.getURL("settings.defaults.json");
     const defaultsResponse = await fetch(defaultsUrl);
     if (defaultsResponse.ok) {
       const defaults = await defaultsResponse.json();
       if (defaults && typeof defaults === "object") {
-        settings = { ...settings, ...defaults };
+        settings = { ...settings, ...(defaults as Settings) };
       }
     }
 
@@ -16,7 +18,7 @@ async function loadSettings() {
     if (localResponse.ok) {
       const local = await localResponse.json();
       if (local && typeof local === "object") {
-        settings = { ...settings, ...local };
+        settings = { ...settings, ...(local as Settings) };
       }
     }
   } catch {
@@ -32,14 +34,14 @@ const SELECTORS = {
   liveTime: 'span.live-time span'
 };
 
-function getChannelFromUrl() {
+function getChannelFromUrl(): string | null {
   const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
   if (!path) return null;
   const [channel] = path.split("/");
   return channel || null;
 }
 
-function parseViewerCount(text) {
+function parseViewerCount(text: string | null): number | null {
   if (!text) return null;
   const trimmed = text.replace(/\s+/g, "");
   const match = trimmed.match(/^([0-9,.]+)([KkMm])?$/);
@@ -52,10 +54,10 @@ function parseViewerCount(text) {
   return Math.round(value);
 }
 
-function extractLiveData() {
+function extractLiveData(): LiveData {
   const channel = getChannelFromUrl();
-  const viewersEl = document.querySelector(SELECTORS.viewers);
-  const liveTimeEl = document.querySelector(SELECTORS.liveTime);
+  const viewersEl = document.querySelector<HTMLElement>(SELECTORS.viewers);
+  const liveTimeEl = document.querySelector<HTMLElement>(SELECTORS.liveTime);
 
   const viewersText = viewersEl?.textContent?.trim() || null;
   const liveTimeText = liveTimeEl?.textContent?.trim() || null;
@@ -70,14 +72,14 @@ function extractLiveData() {
   };
 }
 
-function collectLiveData() {
+function collectLiveData(): LiveData {
   const data = extractLiveData();
   if (settings.DEBUG_MODE) console.log("[Twitch ads muter]", data);
 
   return data;
 }
 
-function waitForElements(timeoutMs = 10000) {
+function waitForElements(timeoutMs = 10000): Promise<void> {
   return new Promise((resolve) => {
     const hasElements = () =>
       Boolean(
@@ -109,29 +111,35 @@ function waitForElements(timeoutMs = 10000) {
   });
 }
 
-function tryLogAfterLoad() {
+function tryLogAfterLoad(): void {
   if (!window.location.hostname.endsWith("twitch.tv")) return;
   setTimeout(() => {
     collectLiveData();
   }, 1500);
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === "getData") {
-    const wait = Boolean(message.wait);
+chrome.runtime.onMessage.addListener(
+  (
+    message: GetDataMessage,
+    _sender: chrome.runtime.MessageSender,
+    sendResponse: (response: GetDataResponse) => void
+  ) => {
+    if (message?.type === "getData") {
+      const wait = Boolean(message.wait);
 
-    if (wait) {
-      waitForElements().then(() => {
-        const data = collectLiveData();
-        sendResponse({ ok: true, data });
-      });
-      return true;
+      if (wait) {
+        waitForElements().then(() => {
+          const data = collectLiveData();
+          sendResponse({ ok: true, data });
+        });
+        return true;
+      }
+
+      const data = collectLiveData();
+      sendResponse({ ok: true, data });
     }
-
-    const data = collectLiveData();
-    sendResponse({ ok: true, data });
   }
-});
+);
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", tryLogAfterLoad, { once: true });

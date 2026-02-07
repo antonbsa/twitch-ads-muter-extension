@@ -1,2 +1,4 @@
 # Local settings
 settings.json
+node_modules/
+dist/

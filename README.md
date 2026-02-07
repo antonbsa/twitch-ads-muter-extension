@@ -11,3 +11,14 @@ This is a minimal Chrome extension based on the Chrome Extensions "Hello World" 
 ## Notes
 - The DOM selectors are best-effort guesses and may need updates.
 - Use the extension popup to force a log on the active tab.
+
+## Build
+1. Install deps: `npm install`
+2. Build: `npm run build`
+3. Load the extension from the project root (manifest uses `dist/` outputs).
+
+## Files
+- `manifest.json`
+- `src/popup/`: `index.html`, `index.ts`, `index.css`
+- `src/content.ts`
+- `icons/`
