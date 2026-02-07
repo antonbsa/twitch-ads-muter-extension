@@ -1,24 +1,29 @@
-import type { Settings, LiveData, GetDataMessage, GetDataResponse } from './types';
+import type {
+  Settings,
+  LiveData,
+  GetDataMessage,
+  GetDataResponse,
+} from './types'
 
-let settings: Settings = {};
+let settings: Settings = {}
 
 async function loadSettings(): Promise<void> {
   try {
-    const defaultsUrl = chrome.runtime.getURL("settings.defaults.json");
-    const defaultsResponse = await fetch(defaultsUrl);
+    const defaultsUrl = chrome.runtime.getURL('settings.defaults.json')
+    const defaultsResponse = await fetch(defaultsUrl)
     if (defaultsResponse.ok) {
-      const defaults = await defaultsResponse.json();
-      if (defaults && typeof defaults === "object") {
-        settings = { ...settings, ...(defaults as Settings) };
+      const defaults = await defaultsResponse.json()
+      if (defaults && typeof defaults === 'object') {
+        settings = { ...settings, ...(defaults as Settings) }
       }
     }
 
-    const localUrl = chrome.runtime.getURL("settings.json");
-    const localResponse = await fetch(localUrl);
+    const localUrl = chrome.runtime.getURL('settings.json')
+    const localResponse = await fetch(localUrl)
     if (localResponse.ok) {
-      const local = await localResponse.json();
-      if (local && typeof local === "object") {
-        settings = { ...settings, ...(local as Settings) };
+      const local = await localResponse.json()
+      if (local && typeof local === 'object') {
+        settings = { ...settings, ...(local as Settings) }
       }
     }
   } catch {
@@ -26,41 +31,41 @@ async function loadSettings(): Promise<void> {
   }
 }
 
-loadSettings();
+loadSettings()
 
 const SELECTORS = {
   // These selectors are best-effort guesses and may need updates.
   viewers: '[data-a-target="animated-channel-viewers-count"]',
-  liveTime: 'span.live-time span'
-};
+  liveTime: 'span.live-time span',
+}
 
 function getChannelFromUrl(): string | null {
-  const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
-  if (!path) return null;
-  const [channel] = path.split("/");
-  return channel || null;
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '')
+  if (!path) return null
+  const [channel] = path.split('/')
+  return channel || null
 }
 
 function parseViewerCount(text: string | null): number | null {
-  if (!text) return null;
-  const trimmed = text.replace(/\s+/g, "");
-  const match = trimmed.match(/^([0-9,.]+)([KkMm])?$/);
-  if (!match) return null;
-  const value = Number(match[1].replace(/,/g, ""));
-  if (Number.isNaN(value)) return null;
-  const unit = match[2]?.toLowerCase();
-  if (unit === "k") return Math.round(value * 1000);
-  if (unit === "m") return Math.round(value * 1000000);
-  return Math.round(value);
+  if (!text) return null
+  const trimmed = text.replace(/\s+/g, '')
+  const match = trimmed.match(/^([0-9,.]+)([KkMm])?$/)
+  if (!match) return null
+  const value = Number(match[1].replace(/,/g, ''))
+  if (Number.isNaN(value)) return null
+  const unit = match[2]?.toLowerCase()
+  if (unit === 'k') return Math.round(value * 1000)
+  if (unit === 'm') return Math.round(value * 1000000)
+  return Math.round(value)
 }
 
 function extractLiveData(): LiveData {
-  const channel = getChannelFromUrl();
-  const viewersEl = document.querySelector<HTMLElement>(SELECTORS.viewers);
-  const liveTimeEl = document.querySelector<HTMLElement>(SELECTORS.liveTime);
+  const channel = getChannelFromUrl()
+  const viewersEl = document.querySelector<HTMLElement>(SELECTORS.viewers)
+  const liveTimeEl = document.querySelector<HTMLElement>(SELECTORS.liveTime)
 
-  const viewersText = viewersEl?.textContent?.trim() || null;
-  const liveTimeText = liveTimeEl?.textContent?.trim() || null;
+  const viewersText = viewersEl?.textContent?.trim() || null
+  const liveTimeText = liveTimeEl?.textContent?.trim() || null
 
   return {
     channel,
@@ -68,15 +73,15 @@ function extractLiveData(): LiveData {
     viewers: parseViewerCount(viewersText),
     liveTime: liveTimeText,
     url: window.location.href,
-    timestamp: new Date().toISOString()
-  };
+    timestamp: new Date().toISOString(),
+  }
 }
 
 function collectLiveData(): LiveData {
-  const data = extractLiveData();
-  if (settings.DEBUG_MODE) console.log("[Twitch ads muter]", data);
+  const data = extractLiveData()
+  if (settings.DEBUG_MODE) console.log('[Twitch ads muter]', data)
 
-  return data;
+  return data
 }
 
 function waitForElements(timeoutMs = 10000): Promise<void> {
@@ -84,65 +89,65 @@ function waitForElements(timeoutMs = 10000): Promise<void> {
     const hasElements = () =>
       Boolean(
         document.querySelector(SELECTORS.viewers) &&
-          document.querySelector(SELECTORS.liveTime)
-      );
+        document.querySelector(SELECTORS.liveTime),
+      )
 
     if (hasElements()) {
-      resolve();
-      return;
+      resolve()
+      return
     }
 
     const observer = new MutationObserver(() => {
       if (hasElements()) {
-        observer.disconnect();
-        resolve();
+        observer.disconnect()
+        resolve()
       }
-    });
+    })
 
     observer.observe(document.documentElement, {
       childList: true,
-      subtree: true
-    });
+      subtree: true,
+    })
 
     setTimeout(() => {
-      observer.disconnect();
-      resolve();
-    }, timeoutMs);
-  });
+      observer.disconnect()
+      resolve()
+    }, timeoutMs)
+  })
 }
 
 function tryLogAfterLoad(): void {
-  if (!window.location.hostname.endsWith("twitch.tv")) return;
+  if (!window.location.hostname.endsWith('twitch.tv')) return
   setTimeout(() => {
-    collectLiveData();
-  }, 1500);
+    collectLiveData()
+  }, 1500)
 }
 
 chrome.runtime.onMessage.addListener(
   (
     message: GetDataMessage,
     _sender: chrome.runtime.MessageSender,
-    sendResponse: (response: GetDataResponse) => void
+    sendResponse: (response: GetDataResponse) => void,
   ) => {
-    if (message?.type === "getData") {
-      const wait = Boolean(message.wait);
+    if (message?.type === 'getData') {
+      const wait = Boolean(message.wait)
 
       if (wait) {
         waitForElements().then(() => {
-          const data = collectLiveData();
-          sendResponse({ ok: true, data });
-        });
-        return true;
+          const data = collectLiveData()
+          sendResponse({ ok: true, data })
+        })
+        return true
       }
 
-      const data = collectLiveData();
-      sendResponse({ ok: true, data });
+      const data = collectLiveData()
+      sendResponse({ ok: true, data })
     }
-  }
-);
+  },
+)
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", tryLogAfterLoad, { once: true });
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', tryLogAfterLoad, { once: true })
 } else {
-  tryLogAfterLoad();
+  tryLogAfterLoad()
 }

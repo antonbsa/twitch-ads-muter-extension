@@ -1,6 +1,6 @@
-import * as esbuild from 'esbuild';
-import { copyFile, mkdir, readdir } from 'fs/promises';
-import { join } from 'path';
+import * as esbuild from 'esbuild'
+import { copyFile, mkdir, readdir } from 'fs/promises'
+import { join } from 'path'
 
 // Build content script
 await esbuild.build({
@@ -9,8 +9,8 @@ await esbuild.build({
   outfile: 'dist/content.js',
   format: 'iife',
   platform: 'browser',
-  target: 'es2020'
-});
+  target: 'es2020',
+})
 
 // Build popup script
 await esbuild.build({
@@ -19,19 +19,21 @@ await esbuild.build({
   outfile: 'dist/popup/index.js',
   format: 'iife',
   platform: 'browser',
-  target: 'es2020'
-});
+  target: 'es2020',
+})
 
 // Copy popup assets
-await mkdir('dist/popup', { recursive: true });
-await copyFile('src/popup/index.html', 'dist/popup/index.html');
-await copyFile('src/popup/index.css', 'dist/popup/index.css');
+await mkdir('dist/popup', { recursive: true })
+await copyFile('src/popup/index.html', 'dist/popup/index.html')
+await copyFile('src/popup/index.css', 'dist/popup/index.css')
 
 // Copy icons
-await mkdir('dist/icons', { recursive: true });
-const iconFiles = await readdir('icons');
+await mkdir('dist/icons', { recursive: true })
+const iconFiles = await readdir('icons')
 await Promise.all(
-  iconFiles.map(file => copyFile(join('icons', file), join('dist/icons', file)))
-);
+  iconFiles.map((file) =>
+    copyFile(join('icons', file), join('dist/icons', file)),
+  ),
+)
 
-console.log('Build complete!');
+console.log('Build complete!')

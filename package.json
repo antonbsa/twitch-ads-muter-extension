@@ -4,11 +4,14 @@
   "description": "Auto mutes Twitch livestream when ads play",
   "license": "ISC",
   "scripts": {
+    "lint": "eslint .",
     "build": "node build.mjs"
   },
   "devDependencies": {
+    "@rocketseat/eslint-config": "^2.2.2",
     "chrome-types": "^0.1.320",
     "esbuild": "^0.27.3",
+    "eslint": "^8.57.1",
     "typescript": "^5.4.5"
   }
 }
