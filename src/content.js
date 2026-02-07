@@ -1,4 +1,30 @@
-import { DEBUG_MODE } from "../config.js";
+let settings = {};
+
+async function loadSettings() {
+  try {
+    const defaultsUrl = chrome.runtime.getURL("settings.defaults.json");
+    const defaultsResponse = await fetch(defaultsUrl);
+    if (defaultsResponse.ok) {
+      const defaults = await defaultsResponse.json();
+      if (defaults && typeof defaults === "object") {
+        settings = { ...settings, ...defaults };
+      }
+    }
+
+    const localUrl = chrome.runtime.getURL("settings.json");
+    const localResponse = await fetch(localUrl);
+    if (localResponse.ok) {
+      const local = await localResponse.json();
+      if (local && typeof local === "object") {
+        settings = { ...settings, ...local };
+      }
+    }
+  } catch {
+    // Local settings are optional and ignored if missing.
+  }
+}
+
+loadSettings();
 
 const SELECTORS = {
   // These selectors are best-effort guesses and may need updates.
@@ -46,7 +72,7 @@ function extractLiveData() {
 
 function collectLiveData() {
   const data = extractLiveData();
-  if (DEBUG_MODE) console.log("[Twitch ads muter]", data);
+  if (settings.DEBUG_MODE) console.log("[Twitch ads muter]", data);
 
   return data;
 }
