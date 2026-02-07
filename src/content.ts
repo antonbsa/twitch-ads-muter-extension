@@ -143,7 +143,11 @@ async function playSound(path: AudioFilesKey): Promise<void> {
     audio.volume = AUDIO_VOLUME
     await audio.play()
   } catch (error) {
-    if (settings.DEBUG_MODE) {
+    // Silently ignore "Extension context invalidated" errors (happens when extension is reloaded)
+    const isContextInvalidated =
+      error instanceof Error &&
+      error.message.includes('Extension context invalidated')
+    if (!isContextInvalidated && settings.DEBUG_MODE) {
       console.warn('[Twitch ads muter] Failed to play sound', error)
     }
   }
