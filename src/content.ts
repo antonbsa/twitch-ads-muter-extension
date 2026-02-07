@@ -33,6 +33,8 @@ async function loadSettings(): Promise<void> {
 
 loadSettings()
 
+const AUDIO_VOLUME = 0.5
+
 const SELECTORS = {
   // These selectors are best-effort guesses and may need updates.
   viewers: 'strong[data-a-target="animated-channel-viewers-count"]',
@@ -41,6 +43,13 @@ const SELECTORS = {
   muteButton: 'button[data-a-target="player-mute-unmute-button"]',
   sliderVolume: 'input[id^="player-volume-slider"]',
 }
+
+const AUDIO_FILES = {
+  mute: 'dist/audios/ad-start.mp3',
+  unmute: 'dist/audios/ad-end.mp3',
+}
+
+type AudioFilesKey = keyof typeof AUDIO_FILES
 
 let adActive = false
 let mutedByExtension = false
@@ -127,17 +136,31 @@ function getIsMuted(): boolean | null {
   return sliderValue === 0
 }
 
-function ensureMuted(): void {
+async function playSound(path: AudioFilesKey): Promise<void> {
+  try {
+    const url = chrome.runtime.getURL(AUDIO_FILES[path])
+    const audio = new Audio(url)
+    audio.volume = AUDIO_VOLUME
+    await audio.play()
+  } catch (error) {
+    if (settings.DEBUG_MODE) {
+      console.warn('[Twitch ads muter] Failed to play sound', error)
+    }
+  }
+}
+
+async function ensureMuted(): Promise<void> {
   const button = getMuteButton()
   if (!button) return
   const isMuted = getIsMuted()
   if (isMuted === true) return
 
+  playSound('mute')
   button.click()
   mutedByExtension = true
 }
 
-function ensureUnmuted(): void {
+async function ensureUnmuted(): Promise<void> {
   if (!mutedByExtension) return
   const button = getMuteButton()
   if (!button) return
@@ -147,6 +170,7 @@ function ensureUnmuted(): void {
     return
   }
 
+  playSound('unmute')
   button.click()
   mutedByExtension = false
 }
@@ -155,21 +179,21 @@ function isAdIndicatorVisible(): boolean {
   return Boolean(document.querySelector(SELECTORS.adIndicator))
 }
 
-function handleAdState(): void {
+async function handleAdState(): Promise<void> {
   const active = isAdIndicatorVisible()
 
   if (active !== adActive) {
     adActive = active
     if (adActive) {
-      ensureMuted()
+      await ensureMuted()
     } else {
-      ensureUnmuted()
+      await ensureUnmuted()
     }
     return
   }
 
   if (adActive) {
-    ensureMuted()
+    await ensureMuted()
   }
 }
 

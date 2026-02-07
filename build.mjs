@@ -29,10 +29,19 @@ await copyFile('src/popup/index.css', 'dist/popup/index.css')
 
 // Copy icons
 await mkdir('dist/icons', { recursive: true })
-const iconFiles = await readdir('icons')
+const iconFiles = await readdir('assets/icons')
 await Promise.all(
   iconFiles.map((file) =>
-    copyFile(join('icons', file), join('dist/icons', file)),
+    copyFile(join('assets/icons', file), join('dist/icons', file)),
+  ),
+)
+
+// Copy audios
+await mkdir('dist/audios', { recursive: true })
+const audioFiles = await readdir('assets/audios')
+await Promise.all(
+  audioFiles.map((file) =>
+    copyFile(join('assets/audios', file), join('dist/audios', file)),
   ),
 )
 

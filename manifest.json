@@ -23,7 +23,11 @@
   "host_permissions": ["https://www.twitch.tv/*"],
   "web_accessible_resources": [
     {
-      "resources": ["settings.defaults.json", "settings.json"],
+      "resources": [
+        "settings.defaults.json",
+        "settings.json",
+        "dist/audios/*.mp3"
+      ],
       "matches": ["https://www.twitch.tv/*"]
     }
   ],
