@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Twitch Ads muter</title>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Twitch Ads muter</h1>
+      <p class="hint">Auto-checking current channel…</p>
+      <section class="stats" aria-live="polite">
+        <div class="row">
+          <span class="label">Live Time</span>
+          <span id="liveTime" class="value">--</span>
+        </div>
+        <div class="row">
+          <span class="label">Viewers</span>
+          <span id="viewersCount" class="value">--</span>
+        </div>
+      </section>
+      <pre id="status" aria-live="polite">Idle.</pre>
+    </main>
+    <script src="index.js"></script>
+  </body>
+</html>
