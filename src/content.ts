@@ -44,6 +44,7 @@ const SELECTORS = {
 
 let adActive = false
 let mutedByExtension = false
+let lastLiveData: LiveData | null = null
 
 function getChannelFromUrl(): string | null {
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '')
@@ -83,8 +84,19 @@ function extractLiveData(): LiveData {
   }
 }
 
-function collectLiveData(): LiveData {
+function updateLiveDataCache(): LiveData {
   const data = extractLiveData()
+  lastLiveData = data
+  return data
+}
+
+function hasAnyLiveField(data: LiveData | null): boolean {
+  if (!data) return false
+  return Boolean(data.viewersText || data.liveTime)
+}
+
+function collectLiveData(): LiveData {
+  const data = updateLiveDataCache()
   if (settings.DEBUG_MODE) console.log('[Twitch ads muter]', data)
 
   return data
@@ -179,19 +191,19 @@ function startAdObserver(): void {
 
 function waitForElements(timeoutMs = 10000): Promise<void> {
   return new Promise((resolve) => {
-    const hasElements = () =>
+    const hasAnyElement = () =>
       Boolean(
-        document.querySelector(SELECTORS.viewers) &&
+        document.querySelector(SELECTORS.viewers) ||
         document.querySelector(SELECTORS.liveTime),
       )
 
-    if (hasElements()) {
+    if (hasAnyElement()) {
       resolve()
       return
     }
 
     const observer = new MutationObserver(() => {
-      if (hasElements()) {
+      if (hasAnyElement()) {
         observer.disconnect()
         resolve()
       }
@@ -209,11 +221,27 @@ function waitForElements(timeoutMs = 10000): Promise<void> {
   })
 }
 
+function startLiveDataObserver(): void {
+  if (!window.location.hostname.endsWith('twitch.tv')) return
+
+  const observer = new MutationObserver(() => {
+    updateLiveDataCache()
+  })
+
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  })
+
+  updateLiveDataCache()
+}
+
 function tryLogAfterLoad(): void {
   if (!window.location.hostname.endsWith('twitch.tv')) return
   setTimeout(() => {
     collectLiveData()
     startAdObserver()
+    startLiveDataObserver()
   }, 1500)
 }
 
@@ -227,6 +255,11 @@ chrome.runtime.onMessage.addListener(
       const wait = Boolean(message.wait)
 
       if (wait) {
+        if (hasAnyLiveField(lastLiveData)) {
+          sendResponse({ ok: true, data: collectLiveData() })
+          return
+        }
+
         waitForElements().then(() => {
           const data = collectLiveData()
           sendResponse({ ok: true, data })
