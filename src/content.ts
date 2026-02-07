@@ -52,7 +52,6 @@ const AUDIO_FILES = {
 type AudioFilesKey = keyof typeof AUDIO_FILES
 
 let adActive = false
-let mutedByExtension = false
 let lastLiveData: LiveData | null = null
 
 function getChannelFromUrl(): string | null {
@@ -161,22 +160,16 @@ async function ensureMuted(): Promise<void> {
 
   playSound('mute')
   button.click()
-  mutedByExtension = true
 }
 
 async function ensureUnmuted(): Promise<void> {
-  if (!mutedByExtension) return
   const button = getMuteButton()
   if (!button) return
   const isMuted = getIsMuted()
-  if (isMuted === false) {
-    mutedByExtension = false
-    return
-  }
+  if (isMuted === false) return
 
   playSound('unmute')
   button.click()
-  mutedByExtension = false
 }
 
 function isAdIndicatorVisible(): boolean {
@@ -193,11 +186,6 @@ async function handleAdState(): Promise<void> {
     } else {
       await ensureUnmuted()
     }
-    return
-  }
-
-  if (adActive) {
-    await ensureMuted()
   }
 }
 
