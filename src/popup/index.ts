@@ -8,6 +8,7 @@ function mustGetElement<T extends HTMLElement>(id: string): T {
   return el as T
 }
 
+const channelEl = mustGetElement<HTMLElement>('channel')
 const statusEl = mustGetElement<HTMLElement>('status')
 const liveTimeEl = mustGetElement<HTMLSpanElement>('liveTime')
 const viewersCountEl = mustGetElement<HTMLSpanElement>('viewersCount')
@@ -24,6 +25,7 @@ async function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
 function renderValues(data: LiveData | null): void {
   liveTimeEl.textContent = data?.liveTime ?? '--'
   viewersCountEl.textContent = data?.viewersText ?? '--'
+  if (data?.channel) channelEl.textContent = data.channel
 }
 
 async function fetchCurrentChannel(): Promise<void> {
