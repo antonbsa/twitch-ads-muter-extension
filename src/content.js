@@ -1,4 +1,4 @@
-import { DEBUG_MODE } from "./config.js";
+import { DEBUG_MODE } from "../config.js";
 
 const SELECTORS = {
   // These selectors are best-effort guesses and may need updates.
