@@ -4,8 +4,31 @@ import type {
   GetDataMessage,
   GetDataResponse,
 } from './types'
+import { AUDIO_NOTIFICATION_KEY } from './types'
 
 let settings: Settings = {}
+
+let adActive = false
+let lastLiveData: LiveData | null = null
+let audioNotificationsEnabled = true
+
+const AUDIO_VOLUME = 0.3
+
+const SELECTORS = {
+  // These selectors are best-effort guesses and may need updates.
+  viewers: 'strong[data-a-target="animated-channel-viewers-count"]',
+  liveTime: 'span.live-time span',
+  adIndicator: '[aria-label="Ad"]',
+  muteButton: 'button[data-a-target="player-mute-unmute-button"]',
+  sliderVolume: 'input[id^="player-volume-slider"]',
+}
+
+const AUDIO_FILES = {
+  mute: 'dist/audios/ad-start.mp3',
+  unmute: 'dist/audios/ad-end.mp3',
+}
+
+type AudioFilesKey = keyof typeof AUDIO_FILES
 
 async function loadSettings(): Promise<void> {
   try {
@@ -30,29 +53,6 @@ async function loadSettings(): Promise<void> {
     // Local settings are optional and ignored if missing.
   }
 }
-
-loadSettings()
-
-const AUDIO_VOLUME = 0.5
-
-const SELECTORS = {
-  // These selectors are best-effort guesses and may need updates.
-  viewers: 'strong[data-a-target="animated-channel-viewers-count"]',
-  liveTime: 'span.live-time span',
-  adIndicator: '[aria-label="Ad"]',
-  muteButton: 'button[data-a-target="player-mute-unmute-button"]',
-  sliderVolume: 'input[id^="player-volume-slider"]',
-}
-
-const AUDIO_FILES = {
-  mute: 'dist/audios/ad-start.mp3',
-  unmute: 'dist/audios/ad-end.mp3',
-}
-
-type AudioFilesKey = keyof typeof AUDIO_FILES
-
-let adActive = false
-let lastLiveData: LiveData | null = null
 
 function getChannelFromUrl(): string | null {
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '')
@@ -136,6 +136,8 @@ function getIsMuted(): boolean | null {
 }
 
 async function playSound(path: AudioFilesKey): Promise<void> {
+  if (!audioNotificationsEnabled) return
+
   try {
     const url = chrome.runtime.getURL(AUDIO_FILES[path])
     const audio = new Audio(url)
@@ -151,6 +153,28 @@ async function playSound(path: AudioFilesKey): Promise<void> {
     }
   }
 }
+
+async function loadAudioPreference(): Promise<void> {
+  try {
+    const stored = await chrome.storage.local.get(AUDIO_NOTIFICATION_KEY)
+    const value = stored[AUDIO_NOTIFICATION_KEY]
+    if (typeof value === 'boolean') {
+      audioNotificationsEnabled = value
+    }
+  } catch {
+    // Ignore storage errors; keep default on.
+  }
+}
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local') return
+  const change = changes[AUDIO_NOTIFICATION_KEY]
+  if (!change) return
+  const next = change.newValue
+  if (typeof next === 'boolean') {
+    audioNotificationsEnabled = next
+  }
+})
 
 async function ensureMuted(): Promise<void> {
   const button = getMuteButton()
@@ -260,6 +284,9 @@ function tryLogAfterLoad(): void {
     startLiveDataObserver()
   }, 1500)
 }
+
+loadSettings()
+loadAudioPreference()
 
 chrome.runtime.onMessage.addListener(
   (

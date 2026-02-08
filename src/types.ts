@@ -17,3 +17,5 @@ export type GetDataMessage = {
 }
 
 export type GetDataResponse = { ok: true; data: LiveData } | { ok: false }
+
+export const AUDIO_NOTIFICATION_KEY = 'audioNotificationsEnabled'

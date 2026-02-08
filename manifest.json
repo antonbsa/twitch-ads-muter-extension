@@ -19,7 +19,7 @@
     "48": "dist/icons/icon48.png",
     "128": "dist/icons/icon128.png"
   },
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "storage"],
   "host_permissions": ["https://www.twitch.tv/*"],
   "web_accessible_resources": [
     {

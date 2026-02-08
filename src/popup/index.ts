@@ -1,4 +1,5 @@
 import type { LiveData, GetDataResponse } from '../types'
+import { AUDIO_NOTIFICATION_KEY } from '../types'
 
 function mustGetElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id)
@@ -70,10 +71,31 @@ async function fetchCurrentChannel(): Promise<void> {
 
 let notificationsEnabled = true
 updateToggleUI(notificationsEnabled)
+notifyToggleEl.dataset.animate = 'false'
+
+async function loadNotificationPreference(): Promise<void> {
+  try {
+    const stored = await chrome.storage.local.get(AUDIO_NOTIFICATION_KEY)
+    const value = stored[AUDIO_NOTIFICATION_KEY]
+    if (typeof value === 'boolean') {
+      notificationsEnabled = value
+      notifyToggleEl.dataset.animate = 'false'
+      updateToggleUI(notificationsEnabled)
+    }
+  } catch {
+    // Ignore storage errors; keep default on.
+  }
+}
 
 notifyToggleEl.addEventListener('click', () => {
+  notifyToggleEl.dataset.animate = 'true'
   notificationsEnabled = !notificationsEnabled
   updateToggleUI(notificationsEnabled)
+  chrome.storage.local.set({ [AUDIO_NOTIFICATION_KEY]: notificationsEnabled })
+  setTimeout(() => {
+    notifyToggleEl.dataset.animate = 'false'
+  }, 200)
 })
 
+loadNotificationPreference()
 fetchCurrentChannel()

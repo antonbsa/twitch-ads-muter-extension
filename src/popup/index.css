@@ -78,7 +78,7 @@ h1 {
   border-radius: 999px;
   background: #2a3240;
   border: 1px solid #384356;
-  transition: background 160ms ease, border-color 160ms ease;
+  transition: none;
 }
 
 .toggle-switch::after {
@@ -90,7 +90,7 @@ h1 {
   height: 16px;
   border-radius: 50%;
   background: #b6c0ce;
-  transition: transform 160ms ease, background 160ms ease;
+  transition: none;
 }
 
 .toggle[data-state='on'] .toggle-switch {
@@ -102,6 +102,14 @@ h1 {
 .toggle[data-state='on'] .toggle-switch::after {
   transform: translateX(20px);
   background: #5dd6ff;
+}
+
+.toggle[data-animate='true'] .toggle-switch {
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.toggle[data-animate='true'] .toggle-switch::after {
+  transition: transform 160ms ease, background 160ms ease;
 }
 
 .loading-dots::after {
