@@ -9,18 +9,11 @@
   <body>
     <main>
       <h1>Twitch Ads muter</h1>
-      <p id="channel" class="hint">Auto-checking current channel…</p>
-      <section class="stats" aria-live="polite">
-        <div class="row">
-          <span class="label">Live Time</span>
-          <span id="liveTime" class="value">--</span>
-        </div>
-        <div class="row">
-          <span class="label">Viewers</span>
-          <span id="viewersCount" class="value">--</span>
-        </div>
-      </section>
-      <pre id="status" aria-live="polite">Idle.</pre>
+      <p id="channel" class="hint loading-dots">Auto-checking current channel</p>
+      <button id="notifyToggle" class="toggle" aria-pressed="true">
+        <span class="toggle-label">Audio notifications</span>
+        <span class="toggle-switch" aria-hidden="true"></span>
+      </button>
     </main>
     <script src="index.js"></script>
   </body>

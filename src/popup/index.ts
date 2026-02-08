@@ -9,12 +9,17 @@ function mustGetElement<T extends HTMLElement>(id: string): T {
 }
 
 const channelEl = mustGetElement<HTMLElement>('channel')
-const statusEl = mustGetElement<HTMLElement>('status')
-const liveTimeEl = mustGetElement<HTMLSpanElement>('liveTime')
-const viewersCountEl = mustGetElement<HTMLSpanElement>('viewersCount')
+const notifyToggleEl = mustGetElement<HTMLButtonElement>('notifyToggle')
+const loadingClass = 'loading-dots'
 
-function setStatus(message: string): void {
-  statusEl.textContent = message
+function setTextWithLoading(el: HTMLElement, message: string): void {
+  if (message.endsWith('...')) {
+    el.textContent = message.slice(0, -3)
+    el.classList.add(loadingClass)
+    return
+  }
+  el.textContent = message
+  el.classList.remove(loadingClass)
 }
 
 async function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
@@ -22,19 +27,27 @@ async function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
   return tab
 }
 
-function renderValues(data: LiveData | null): void {
-  liveTimeEl.textContent = data?.liveTime ?? '--'
-  viewersCountEl.textContent = data?.viewersText ?? '--'
-  if (data?.channel) channelEl.textContent = data.channel
+function renderChannel(data: LiveData | null): void {
+  if (data?.channel) {
+    setTextWithLoading(channelEl, data.channel)
+  }
+}
+
+function updateToggleUI(enabled: boolean): void {
+  notifyToggleEl.dataset.state = enabled ? 'on' : 'off'
+  notifyToggleEl.setAttribute('aria-pressed', enabled ? 'true' : 'false')
+  notifyToggleEl.setAttribute(
+    'aria-label',
+    `Audio notifications: ${enabled ? 'On' : 'Off'}`,
+  )
 }
 
 async function fetchCurrentChannel(): Promise<void> {
-  setStatus('Checking active tab...')
+  setTextWithLoading(channelEl, 'Auto-checking current channel...')
 
   const tab = await getActiveTab()
   if (!tab || !tab.id) {
-    setStatus('No active tab found.')
-    renderValues(null)
+    setTextWithLoading(channelEl, 'No active tab found.')
     return
   }
 
@@ -45,23 +58,22 @@ async function fetchCurrentChannel(): Promise<void> {
     )
 
     if (!response || response.ok !== true) {
-      setStatus('Could not read Twitch data.')
-      renderValues(null)
+      setTextWithLoading(channelEl, 'Could not read Twitch data.')
       return
     }
 
-    renderValues(response.data)
-    const timestamp = new Date().toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    })
-    setStatus(`Loaded at ${timestamp}`)
+    renderChannel(response.data)
   } catch (error) {
-    setStatus('Content script not available on this page.')
-    renderValues(null)
+    setTextWithLoading(channelEl, 'Content script not available on this page.')
   }
 }
+
+let notificationsEnabled = true
+updateToggleUI(notificationsEnabled)
+
+notifyToggleEl.addEventListener('click', () => {
+  notificationsEnabled = !notificationsEnabled
+  updateToggleUI(notificationsEnabled)
+})
 
 fetchCurrentChannel()
