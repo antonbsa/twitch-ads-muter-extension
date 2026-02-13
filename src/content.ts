@@ -6,6 +6,7 @@ import type {
   AdMuteStats,
 } from './types'
 import { AUDIO_NOTIFICATION_KEY, AD_MUTE_STATS_KEY } from './types'
+import { logger, setDebugEnabled } from './utils/logger'
 
 let settings: Settings = {}
 
@@ -53,6 +54,8 @@ async function loadSettings(): Promise<void> {
     }
   } catch {
     // Local settings are optional and ignored if missing.
+  } finally {
+    setDebugEnabled(Boolean(settings.DEBUG_MODE))
   }
 }
 
@@ -107,7 +110,7 @@ function hasAnyLiveField(data: LiveData | null): boolean {
 
 function collectLiveData(): LiveData {
   const data = updateLiveDataCache()
-  if (settings.DEBUG_MODE) console.log('[Twitch ads muter]', data)
+  logger.log('[Twitch ads muter]', data)
 
   return data
 }
@@ -150,8 +153,8 @@ async function playSound(path: AudioFilesKey): Promise<void> {
     const isContextInvalidated =
       error instanceof Error &&
       error.message.includes('Extension context invalidated')
-    if (!isContextInvalidated && settings.DEBUG_MODE) {
-      console.warn('[Twitch ads muter] Failed to play sound', error)
+    if (!isContextInvalidated) {
+      logger.warn('[Twitch ads muter] Failed to play sound', error)
     }
   }
 }
@@ -393,13 +396,21 @@ loadSettings()
 loadAudioPreference()
 
 chrome.runtime.onMessage.addListener(
-  (
+  async (
     message: GetDataMessage,
     _sender: chrome.runtime.MessageSender,
     sendResponse: (response: GetDataResponse) => void,
   ) => {
     if (message?.type === 'getData') {
       const wait = Boolean(message.wait)
+      logger.log(
+        `[Twitch ads muter] - Bytes in use: ${JSON.stringify(
+          await chrome.storage.local.getBytesInUse([
+            AUDIO_NOTIFICATION_KEY,
+            AD_MUTE_STATS_KEY,
+          ]),
+        )}`,
+      )
 
       if (wait) {
         if (hasAnyLiveField(lastLiveData)) {
