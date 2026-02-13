@@ -12,6 +12,7 @@ let settings: Settings = {}
 let adActive = false
 let lastLiveData: LiveData | null = null
 let audioNotificationsEnabled = true
+let mutedByExtension = false
 
 const AUDIO_VOLUME = 0.3
 
@@ -208,12 +209,17 @@ async function handleAdState(): Promise<void> {
   if (active !== adActive) {
     adActive = active
     if (adActive) {
+      mutedByExtension = false
       const didMute = await ensureMuted()
+      mutedByExtension = didMute
       if (didMute) {
         recordMutedAd(getChannelFromUrl())
       }
     } else {
-      await ensureUnmuted()
+      if (mutedByExtension) {
+        await ensureUnmuted()
+      }
+      mutedByExtension = false
     }
   }
 }
