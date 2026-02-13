@@ -1,5 +1,5 @@
-import type { LiveData, GetDataResponse } from '../types'
-import { AUDIO_NOTIFICATION_KEY } from '../types'
+import type { LiveData, GetDataResponse, AdMuteStats } from '../types'
+import { AUDIO_NOTIFICATION_KEY, AD_MUTE_STATS_KEY } from '../types'
 
 function mustGetElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id)
@@ -11,6 +11,8 @@ function mustGetElement<T extends HTMLElement>(id: string): T {
 
 const channelEl = mustGetElement<HTMLElement>('channel')
 const notifyToggleEl = mustGetElement<HTMLButtonElement>('notifyToggle')
+const mutedTodayEl = mustGetElement<HTMLParagraphElement>('mutedToday')
+const mutedTotalEl = mustGetElement<HTMLParagraphElement>('mutedTotal')
 const loadingClass = 'loading-dots'
 
 function setTextWithLoading(el: HTMLElement, message: string): void {
@@ -43,8 +45,57 @@ function updateToggleUI(enabled: boolean): void {
   )
 }
 
+function setMutedDefaults(): void {
+  mutedTodayEl.textContent = 'No ad muted today yet'
+  mutedTotalEl.textContent = 'No ad muted in this channel yet'
+}
+
+function getStartOfToday(): number {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+}
+
+async function updateMuteStats(channel: string | null): Promise<void> {
+  if (!channel) {
+    setMutedDefaults()
+    return
+  }
+
+  try {
+    const stored = await chrome.storage.local.get(AD_MUTE_STATS_KEY)
+    const stats = stored[AD_MUTE_STATS_KEY] as AdMuteStats | undefined
+    if (!stats || stats.version !== 2 || !Array.isArray(stats.channels)) {
+      setMutedDefaults()
+      return
+    }
+
+    const key = channel.toLowerCase()
+    const channelStats = stats.channels.find((item) => item.channel === key)
+    if (!channelStats) {
+      setMutedDefaults()
+      return
+    }
+
+    const todayStart = getStartOfToday()
+    const todayCount = channelStats.log.filter((ts) => ts >= todayStart).length
+    const totalCount = Math.max(0, Number(channelStats.allTimeCount ?? 0))
+
+    mutedTodayEl.textContent =
+      todayCount > 0
+        ? `${todayCount} ad${todayCount === 1 ? '' : 's'} muted today`
+        : 'No ad muted today yet'
+    mutedTotalEl.textContent =
+      totalCount > 0
+        ? `${totalCount} ad${totalCount === 1 ? '' : 's'} muted in this channel`
+        : 'No ad muted in this channel yet'
+  } catch {
+    setMutedDefaults()
+  }
+}
+
 async function fetchCurrentChannel(): Promise<void> {
   setTextWithLoading(channelEl, 'Auto-checking current channel...')
+  setMutedDefaults()
 
   const tab = await getActiveTab()
   if (!tab || !tab.id) {
@@ -64,6 +115,7 @@ async function fetchCurrentChannel(): Promise<void> {
     }
 
     renderChannel(response.data)
+    updateMuteStats(response.data.channel)
   } catch (error) {
     setTextWithLoading(channelEl, 'Content script not available on this page.')
   }

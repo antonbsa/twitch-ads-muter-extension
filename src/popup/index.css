@@ -37,6 +37,22 @@ h1 {
   font-size: 12px;
 }
 
+.ad-stats {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.stat {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .toggle {
   width: 100%;
   margin-top: 10px;
