@@ -4,7 +4,7 @@ import { join } from 'path'
 
 // Build content script
 await esbuild.build({
-  entryPoints: ['src/content.ts'],
+  entryPoints: ['src/index.ts'],
   bundle: true,
   outfile: 'dist/content.js',
   format: 'iife',
