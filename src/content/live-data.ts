@@ -59,7 +59,7 @@ export function hasAnyLiveField(data: LiveData | null): boolean {
 
 export function collectLiveData(): LiveData {
   const data = updateLiveDataCache()
-  logger.log('[Twitch ads muter]', data)
+  logger.log(data)
 
   return data
 }

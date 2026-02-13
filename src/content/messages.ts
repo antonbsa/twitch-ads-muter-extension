@@ -18,7 +18,7 @@ export function registerMessageHandlers(): void {
       if (message?.type === 'getData') {
         const wait = Boolean(message.wait)
         logger.log(
-          `[Twitch ads muter] - Bytes in use: ${JSON.stringify(
+          `Bytes in use: ${JSON.stringify(
             await chrome.storage.local.getBytesInUse([
               AUDIO_NOTIFICATION_KEY,
               AD_MUTE_STATS_KEY,

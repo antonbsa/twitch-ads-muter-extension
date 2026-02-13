@@ -26,7 +26,7 @@ export async function playSound(path: AudioFilesKey): Promise<void> {
       error instanceof Error &&
       error.message.includes('Extension context invalidated')
     if (!isContextInvalidated) {
-      logger.warn('[Twitch ads muter] Failed to play sound', error)
+      logger.warn('Failed to play sound', error)
     }
   }
 }
