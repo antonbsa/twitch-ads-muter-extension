@@ -1,5 +1,5 @@
 import type { LiveData, GetDataResponse, AdMuteStats } from '../types'
-import { AUDIO_NOTIFICATION_KEY, AD_MUTE_STATS_KEY } from '../types'
+import { AUDIO_NOTIFICATION_KEY } from '../types'
 
 function mustGetElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id)
@@ -13,6 +13,12 @@ const channelEl = mustGetElement<HTMLElement>('channel')
 const notifyToggleEl = mustGetElement<HTMLButtonElement>('notifyToggle')
 const mutedTodayEl = mustGetElement<HTMLParagraphElement>('mutedToday')
 const mutedTotalEl = mustGetElement<HTMLParagraphElement>('mutedTotal')
+const mutedTodayValueEl =
+  mutedTodayEl.querySelector<HTMLSpanElement>('span') ??
+  mustGetElement<HTMLSpanElement>('mutedTodayValue')
+const mutedTotalValueEl =
+  mutedTotalEl.querySelector<HTMLSpanElement>('span') ??
+  mustGetElement<HTMLSpanElement>('mutedTotalValue')
 const loadingClass = 'loading-dots'
 
 function setTextWithLoading(el: HTMLElement, message: string): void {
@@ -45,9 +51,23 @@ function updateToggleUI(enabled: boolean): void {
   )
 }
 
-function setMutedDefaults(): void {
-  mutedTodayEl.textContent = 'No ad muted today yet'
-  mutedTotalEl.textContent = 'No ad muted in this channel yet'
+function setStatsUnavailable(): void {
+  mutedTodayValueEl.textContent = '-'
+  mutedTotalValueEl.textContent = '-'
+}
+
+function getChannelFromTabUrl(url: string | undefined): string | null {
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    if (!parsed.hostname.endsWith('twitch.tv')) return null
+    const path = parsed.pathname.replace(/^\/+|\/+$/g, '')
+    if (!path) return null
+    const [channel] = path.split('/')
+    return channel || null
+  } catch {
+    return null
+  }
 }
 
 function getStartOfToday(): number {
@@ -55,53 +75,47 @@ function getStartOfToday(): number {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
 }
 
-async function updateMuteStats(channel: string | null): Promise<void> {
+function updateMuteStatsFromStats(
+  channel: string | null,
+  stats: AdMuteStats | undefined,
+): void {
   if (!channel) {
-    setMutedDefaults()
+    setStatsUnavailable()
     return
   }
 
-  try {
-    const stored = await chrome.storage.local.get(AD_MUTE_STATS_KEY)
-    const stats = stored[AD_MUTE_STATS_KEY] as AdMuteStats | undefined
-    if (!stats || stats.version !== 2 || !Array.isArray(stats.channels)) {
-      setMutedDefaults()
-      return
-    }
-
-    const key = channel.toLowerCase()
-    const channelStats = stats.channels.find((item) => item.channel === key)
-    if (!channelStats) {
-      setMutedDefaults()
-      return
-    }
-
-    const todayStart = getStartOfToday()
-    const todayCount = channelStats.log.filter((ts) => ts >= todayStart).length
-    const totalCount = Math.max(0, Number(channelStats.allTimeCount ?? 0))
-
-    mutedTodayEl.textContent =
-      todayCount > 0
-        ? `${todayCount} ad${todayCount === 1 ? '' : 's'} muted today`
-        : 'No ad muted today yet'
-    mutedTotalEl.textContent =
-      totalCount > 0
-        ? `${totalCount} ad${totalCount === 1 ? '' : 's'} muted in this channel`
-        : 'No ad muted in this channel yet'
-  } catch {
-    setMutedDefaults()
+  if (!stats || stats.version !== 2 || !Array.isArray(stats.channels)) {
+    setStatsUnavailable()
+    return
   }
+
+  const key = channel.toLowerCase()
+  const channelStats = stats.channels.find((item) => item.channel === key)
+  if (!channelStats) {
+    setStatsUnavailable()
+    return
+  }
+
+  const todayStart = getStartOfToday()
+  const todayCount = channelStats.log.filter((ts) => ts >= todayStart).length
+  const totalCount = Math.max(0, Number(channelStats.allTimeCount ?? 0))
+
+  mutedTodayValueEl.textContent = String(todayCount)
+  mutedTotalValueEl.textContent = String(totalCount)
 }
 
 async function fetchCurrentChannel(): Promise<void> {
   setTextWithLoading(channelEl, 'Auto-checking current channel...')
-  setMutedDefaults()
+  setStatsUnavailable()
 
   const tab = await getActiveTab()
   if (!tab || !tab.id) {
     setTextWithLoading(channelEl, 'No active tab found.')
+    setStatsUnavailable()
     return
   }
+
+  const urlChannel = getChannelFromTabUrl(tab.url)
 
   try {
     const response: GetDataResponse | undefined = await chrome.tabs.sendMessage(
@@ -111,13 +125,19 @@ async function fetchCurrentChannel(): Promise<void> {
 
     if (!response || response.ok !== true) {
       setTextWithLoading(channelEl, 'Could not read Twitch data.')
+      if (!urlChannel) {
+        setStatsUnavailable()
+      }
       return
     }
 
     renderChannel(response.data)
-    updateMuteStats(response.data.channel)
+    updateMuteStatsFromStats(response.data.channel, response.stats)
   } catch (error) {
     setTextWithLoading(channelEl, 'Content script not available on this page.')
+    if (!urlChannel) {
+      setStatsUnavailable()
+    }
   }
 }
 
@@ -150,4 +170,5 @@ notifyToggleEl.addEventListener('click', () => {
 })
 
 loadNotificationPreference()
+console.log('[Twitch ads muter] popup opened')
 fetchCurrentChannel()

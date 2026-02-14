@@ -16,7 +16,10 @@ export function registerMessageHandlers(): void {
       sendResponse: (response: GetDataResponse) => void,
     ) => {
       if (message?.type === 'getData') {
+        logger.log('Received getData message', message)
         const wait = Boolean(message.wait)
+        const statsStored = await chrome.storage.local.get(AD_MUTE_STATS_KEY)
+        const stats = statsStored[AD_MUTE_STATS_KEY]
         logger.log(
           `Bytes in use: ${JSON.stringify(
             await chrome.storage.local.getBytesInUse([
@@ -27,20 +30,22 @@ export function registerMessageHandlers(): void {
         )
 
         if (wait) {
-          if (hasAnyLiveField(getLastLiveData())) {
-            sendResponse({ ok: true, data: collectLiveData() })
+          const liveData = getLastLiveData()
+
+          if (hasAnyLiveField(liveData)) {
+            sendResponse({ ok: true, data: collectLiveData(), stats })
             return
           }
 
           waitForElements().then(() => {
             const data = collectLiveData()
-            sendResponse({ ok: true, data })
+            sendResponse({ ok: true, data, stats })
           })
           return true
         }
 
         const data = collectLiveData()
-        sendResponse({ ok: true, data })
+        sendResponse({ ok: true, data, stats })
       }
     },
   )

@@ -16,7 +16,9 @@ export type GetDataMessage = {
   wait?: boolean
 }
 
-export type GetDataResponse = { ok: true; data: LiveData } | { ok: false }
+export type GetDataResponse =
+  | { ok: true; data: LiveData; stats?: AdMuteStats }
+  | { ok: false }
 
 export const AUDIO_NOTIFICATION_KEY = 'audioNotificationsEnabled'
 export const AD_MUTE_STATS_KEY = 'adMuteStats'
