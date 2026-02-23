@@ -2,11 +2,12 @@ import { isAdIndicatorVisible } from './selectors'
 import { ensureMuted, ensureUnmuted } from './mute'
 import { recordMutedAd } from './stats'
 import { getChannelFromUrl } from './live-data'
-
+import { isMuteAdsEnabled } from './preferences'
 let adActive = false
 let mutedByExtension = false
 
 async function handleAdState(): Promise<void> {
+  if (!isMuteAdsEnabled()) return
   const active = isAdIndicatorVisible()
 
   if (active !== adActive) {

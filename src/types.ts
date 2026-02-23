@@ -40,4 +40,5 @@ export type PopupLogMessage = {
 }
 
 export const AUDIO_NOTIFICATION_KEY = 'audioNotificationsEnabled'
+export const AD_MUTE_ENABLED_KEY = 'adMuteEnabled'
 export const AD_MUTE_STATS_KEY = 'adMuteStats'

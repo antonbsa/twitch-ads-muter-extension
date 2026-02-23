@@ -1,10 +1,7 @@
 import { startAdObserver } from './content/ads'
-import {
-  loadAudioPreference,
-  listenAudioPreferenceChanges,
-} from './content/audio'
 import { collectLiveData, startLiveDataObserver } from './content/live-data'
 import { registerMessageHandlers } from './content/messages'
+import { setupPreferences } from './content/preferences'
 import { loadSettings } from './content/settings'
 
 function startTwitchObservers(): void {
@@ -25,8 +22,7 @@ function onDomReady(callback: () => void): void {
 
 function initContentScript(): void {
   loadSettings()
-  loadAudioPreference()
-  listenAudioPreferenceChanges()
+  setupPreferences()
   registerMessageHandlers()
 
   onDomReady(() => {

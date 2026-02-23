@@ -72,6 +72,12 @@ h1 {
     background 120ms ease;
 }
 
+.toggle.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .toggle:hover {
   border-color: #3a4558;
   background: #1b2230;
