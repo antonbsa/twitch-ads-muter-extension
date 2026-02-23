@@ -127,22 +127,3 @@ h1 {
 .toggle[data-animate='true'] .toggle-switch::after {
   transition: transform 160ms ease, background 160ms ease;
 }
-
-.loading-dots::after {
-  content: '...';
-  display: inline-block;
-  width: 1.5em;
-  margin-left: 2px;
-  overflow: hidden;
-  vertical-align: bottom;
-  animation: loading-dots 1.2s steps(4, end) infinite;
-}
-
-@keyframes loading-dots {
-  0% {
-    width: 0;
-  }
-  100% {
-    width: 1.5em;
-  }
-}

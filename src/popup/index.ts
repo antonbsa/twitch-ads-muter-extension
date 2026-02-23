@@ -1,5 +1,11 @@
-import type { LiveData, GetDataResponse, AdMuteStats } from '../types'
+import type {
+  LiveData,
+  GetDataResponse,
+  AdMuteStats,
+  PopupLogMessage,
+} from '../types'
 import { AUDIO_NOTIFICATION_KEY } from '../types'
+import { logger } from '../utils/logger'
 
 function mustGetElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id)
@@ -20,6 +26,10 @@ const mutedTotalValueEl =
   mutedTotalEl.querySelector<HTMLSpanElement>('span') ??
   mustGetElement<HTMLSpanElement>('mutedTotalValue')
 const loadingClass = 'loading-dots'
+
+let cachedStats: AdMuteStats | undefined
+let cachedStatsSerialized: string | null = null
+let currentChannel: string | null = null
 
 function setTextWithLoading(el: HTMLElement, message: string): void {
   if (message.endsWith('...')) {
@@ -104,24 +114,102 @@ function updateMuteStatsFromStats(
   mutedTotalValueEl.textContent = String(totalCount)
 }
 
+async function logToActiveTab(
+  message: string,
+  data?: unknown,
+  level: PopupLogMessage['level'] = 'log',
+): Promise<void> {
+  const tab = await getActiveTab()
+  if (!tab?.id) return
+
+  const payload: PopupLogMessage = {
+    type: 'popupLog',
+    level,
+    message,
+    data,
+  }
+
+  try {
+    await chrome.tabs.sendMessage(tab.id, payload)
+  } catch {
+    // Ignore if content script is not available on this tab.
+  }
+}
+
+async function loadStatsFromStorage(): Promise<void> {
+  if (!currentChannel) {
+    setStatsUnavailable()
+    return
+  }
+
+  try {
+    const stored = await chrome.storage.local.get('adMuteStats')
+    const stats = stored.adMuteStats as AdMuteStats | undefined
+    const serialized = stats ? JSON.stringify(stats) : null
+
+    if (serialized !== cachedStatsSerialized) {
+      cachedStatsSerialized = serialized
+      cachedStats = stats
+      updateMuteStatsFromStats(currentChannel, cachedStats)
+    }
+  } catch {
+    setStatsUnavailable()
+  }
+}
+
+async function initStatsForActiveTab(): Promise<void> {
+  const tab = await getActiveTab()
+  if (!tab) {
+    logToActiveTab('initStatsForActiveTab: no active tab', undefined, 'warn')
+    setStatsUnavailable()
+    return
+  }
+
+  currentChannel = getChannelFromTabUrl(tab.url)
+  logToActiveTab('initStatsForActiveTab: active tab', {
+    url: tab.url,
+    channel: currentChannel,
+  })
+  if (!currentChannel) {
+    setStatsUnavailable()
+    return
+  }
+
+  if (cachedStats) {
+    updateMuteStatsFromStats(currentChannel, cachedStats)
+  } else {
+    setStatsUnavailable()
+  }
+
+  await loadStatsFromStorage()
+}
+
 async function fetchCurrentChannel(): Promise<void> {
   setTextWithLoading(channelEl, 'Auto-checking current channel...')
   setStatsUnavailable()
 
   const tab = await getActiveTab()
   if (!tab || !tab.id) {
+    logToActiveTab('fetchCurrentChannel: no active tab or tab id', tab, 'warn')
     setTextWithLoading(channelEl, 'No active tab found.')
     setStatsUnavailable()
     return
   }
 
   const urlChannel = getChannelFromTabUrl(tab.url)
+  currentChannel = urlChannel
+  logToActiveTab('fetchCurrentChannel: active tab', {
+    url: tab.url,
+    channel: urlChannel,
+  })
 
   try {
     const response: GetDataResponse | undefined = await chrome.tabs.sendMessage(
       tab.id,
       { type: 'getData', wait: true },
     )
+
+    logToActiveTab('fetchCurrentChannel: getData response', response)
 
     if (!response || response.ok !== true) {
       setTextWithLoading(channelEl, 'Could not read Twitch data.')
@@ -132,8 +220,17 @@ async function fetchCurrentChannel(): Promise<void> {
     }
 
     renderChannel(response.data)
-    updateMuteStatsFromStats(response.data.channel, response.stats)
+    if (response.data.channel && response.data.channel !== currentChannel) {
+      currentChannel = response.data.channel
+      if (cachedStats) {
+        updateMuteStatsFromStats(currentChannel, cachedStats)
+      } else {
+        setStatsUnavailable()
+      }
+      await loadStatsFromStorage()
+    }
   } catch (error) {
+    logToActiveTab('fetchCurrentChannel: getData error', error, 'warn')
     setTextWithLoading(channelEl, 'Content script not available on this page.')
     if (!urlChannel) {
       setStatsUnavailable()
@@ -170,5 +267,6 @@ notifyToggleEl.addEventListener('click', () => {
 })
 
 loadNotificationPreference()
-console.log('[Twitch ads muter] popup opened')
+logger.log('Popup opened')
+initStatsForActiveTab()
 fetchCurrentChannel()
