@@ -14,7 +14,7 @@ describe('shared messages', () => {
     jest.clearAllMocks()
   })
 
-  it('sendPopupLog sends payload to tab', async () => {
+  it('should send popupLog payload to tab', async () => {
     const sendMessage = jest.spyOn(chrome.tabs, 'sendMessage')
     await sendPopupLog(1, 'hello', { foo: 'bar' }, 'warn')
     expect(sendMessage).toHaveBeenCalledWith(1, {
@@ -25,7 +25,7 @@ describe('shared messages', () => {
     })
   })
 
-  it('requestLiveData sends getData request', async () => {
+  it('should send getData request', async () => {
     const responseMock = {
       ok: true,
       data: {
@@ -45,7 +45,7 @@ describe('shared messages', () => {
     expect(response).toEqual(responseMock)
   })
 
-  it('registerMessageHandlers routes popupLog and getData', async () => {
+  it('should route popupLog and getData', async () => {
     const onPopupLog = jest.fn()
     const onGetData = jest.fn(async () => ({
       ok: true,

@@ -10,7 +10,7 @@ describe('settings', () => {
     jest.restoreAllMocks()
   })
 
-  it('loads defaults and local settings', async () => {
+  it('should load defaults and local settings', async () => {
     if (!globalThis.fetch) {
       globalThis.fetch = jest.fn() as unknown as typeof fetch
     }

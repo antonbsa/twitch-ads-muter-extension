@@ -20,7 +20,7 @@ describe('mute helpers', () => {
     return button
   }
 
-  it('ensureMuted clicks when not muted', async () => {
+  it('should click when not muted', async () => {
     setupSlider('20')
     const button = setupButton()
 
@@ -30,7 +30,7 @@ describe('mute helpers', () => {
     expect(button.click).toHaveBeenCalled()
   })
 
-  it('ensureMuted does nothing when already muted', async () => {
+  it('should do nothing when already muted', async () => {
     setupSlider('0')
     const button = setupButton()
 
@@ -40,7 +40,7 @@ describe('mute helpers', () => {
     expect(button.click).not.toHaveBeenCalled()
   })
 
-  it('ensureUnmuted clicks when muted', async () => {
+  it('should click when muted', async () => {
     setupSlider('0')
     const button = setupButton()
 

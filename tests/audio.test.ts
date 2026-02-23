@@ -19,7 +19,7 @@ describe('audio', () => {
     }
   })
 
-  it('loads audio preference from storage', async () => {
+  it('should load audio preference from storage', async () => {
     __test.storageData[AUDIO_NOTIFICATION_KEY] = false
     const playSpy = jest.spyOn(Audio.prototype, 'play')
     await setupPreferences()
@@ -27,7 +27,7 @@ describe('audio', () => {
     expect(playSpy).not.toHaveBeenCalled()
   })
 
-  it('listens for preference changes', async () => {
+  it('should listen for preference changes', async () => {
     await setupPreferences()
     const listener = __test.storageListeners[__test.storageListeners.length - 1]
 

@@ -17,7 +17,7 @@ describe('stats', () => {
     jest.restoreAllMocks()
   })
 
-  it('creates stats and increments counts', async () => {
+  it('should create stats and increments counts', async () => {
     await recordMutedAd('Hayashii')
 
     const stats = __test.storageData.adMuteStats as AdMuteStats

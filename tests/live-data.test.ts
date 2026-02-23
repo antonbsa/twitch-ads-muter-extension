@@ -10,7 +10,7 @@ describe('live data', () => {
     window.history.pushState({}, '', '/')
   })
 
-  it('getChannelFromUrl extracts channel', () => {
+  it('should extract channel', () => {
     window.history.pushState({}, '', '/hayashii')
     expect(getChannelFromUrl()).toBe('hayashii')
 
@@ -21,7 +21,7 @@ describe('live data', () => {
     expect(getChannelFromUrl()).toBe('hayashii')
   })
 
-  it('collectLiveData reads DOM and returns structure', () => {
+  it('should read DOM and return structure', () => {
     window.history.pushState({}, '', '/hayashii')
 
     const viewers = document.createElement('strong')
@@ -44,7 +44,7 @@ describe('live data', () => {
     expect(typeof data.timestamp).toBe('string')
   })
 
-  it('hasAnyLiveField detects data', () => {
+  it('should detect data', () => {
     expect(hasAnyLiveField(null)).toBe(false)
     expect(
       hasAnyLiveField({

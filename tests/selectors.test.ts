@@ -10,7 +10,7 @@ describe('selectors', () => {
     document.body.innerHTML = ''
   })
 
-  it('finds mute button', () => {
+  it('should find mute button', () => {
     const button = document.createElement('button')
     button.setAttribute('data-a-target', 'player-mute-unmute-button')
     document.body.appendChild(button)
@@ -18,7 +18,7 @@ describe('selectors', () => {
     expect(getMuteButton()).toBe(button)
   })
 
-  it('reads volume slider value from value/aria/data', () => {
+  it('should read volume slider value from value/aria/data', () => {
     const slider = document.createElement('input')
     slider.setAttribute('id', 'player-volume-slider-1')
     slider.setAttribute('value', '42')
@@ -35,7 +35,7 @@ describe('selectors', () => {
     expect(getVolumeSliderValue()).toBe(3)
   })
 
-  it('detects ad indicator and live data elements', () => {
+  it('should detect ad indicator and live data elements', () => {
     expect(isAdIndicatorVisible()).toBe(false)
     expect(hasLiveDataElements()).toBe(false)
 

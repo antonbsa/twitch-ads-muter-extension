@@ -6,7 +6,7 @@ describe('logger', () => {
     jest.restoreAllMocks()
   })
 
-  it('does not log when debug disabled', () => {
+  it('should not log when debug disabled', () => {
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
     setDebugEnabled(false)
 
@@ -15,7 +15,7 @@ describe('logger', () => {
     expect(logSpy).not.toHaveBeenCalled()
   })
 
-  it('logs with prefix when debug enabled', () => {
+  it('should log with prefix when debug enabled', () => {
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
     setDebugEnabled(true)
 

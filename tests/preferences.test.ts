@@ -22,6 +22,13 @@ describe('preferences', () => {
     }
   })
 
+  it('should default to true when storage has no values', async () => {
+    await setupPreferences()
+
+    expect(isAudioEnabled()).toBe(true)
+    expect(isMuteAdsEnabled()).toBe(true)
+  })
+
   it('should load initial values from storage', async () => {
     __test.storageData[AUDIO_NOTIFICATION_KEY] = false
     __test.storageData[AD_MUTE_ENABLED_KEY] = false
@@ -30,13 +37,6 @@ describe('preferences', () => {
 
     expect(isAudioEnabled()).toBe(false)
     expect(isMuteAdsEnabled()).toBe(false)
-  })
-
-  it('should default to true when storage has no values', async () => {
-    await setupPreferences()
-
-    expect(isAudioEnabled()).toBe(true)
-    expect(isMuteAdsEnabled()).toBe(true)
   })
 
   it('should update values on storage change', async () => {
