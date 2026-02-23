@@ -4,7 +4,7 @@ import type {
   AdMuteStats,
   PopupLogMessage,
 } from '../types'
-import { AUDIO_NOTIFICATION_KEY } from '../types'
+import { AUDIO_NOTIFICATION_KEY, AD_MUTE_ENABLED_KEY } from '../types'
 import { requestLiveData, sendPopupLog } from '../shared/messages'
 import { logger } from '../utils/logger'
 
@@ -17,6 +17,7 @@ function mustGetElement<T extends HTMLElement>(id: string): T {
 }
 
 const channelEl = mustGetElement<HTMLElement>('channel')
+const muteToggleEl = mustGetElement<HTMLButtonElement>('muteToggle')
 const notifyToggleEl = mustGetElement<HTMLButtonElement>('notifyToggle')
 const mutedTodayEl = mustGetElement<HTMLParagraphElement>('mutedToday')
 const mutedTotalEl = mustGetElement<HTMLParagraphElement>('mutedTotal')
@@ -62,6 +63,17 @@ function updateToggleUI(enabled: boolean): void {
   )
 }
 
+function updateMuteToggleUI(enabled: boolean): void {
+  muteToggleEl.dataset.state = enabled ? 'on' : 'off'
+  muteToggleEl.setAttribute('aria-pressed', enabled ? 'true' : 'false')
+  muteToggleEl.setAttribute('aria-label', `Mute ads: ${enabled ? 'On' : 'Off'}`)
+}
+
+function setAudioToggleDisabled(disabled: boolean): void {
+  notifyToggleEl.classList.toggle('is-disabled', disabled)
+  notifyToggleEl.setAttribute('aria-disabled', disabled ? 'true' : 'false')
+}
+
 function setStatsUnavailable(): void {
   mutedTodayValueEl.textContent = '-'
   mutedTotalValueEl.textContent = '-'
@@ -103,7 +115,8 @@ function updateMuteStatsFromStats(
   const key = channel.toLowerCase()
   const channelStats = stats.channels.find((item) => item.channel === key)
   if (!channelStats) {
-    setStatsUnavailable()
+    mutedTodayValueEl.textContent = '0'
+    mutedTotalValueEl.textContent = '0'
     return
   }
 
@@ -231,7 +244,10 @@ async function fetchCurrentChannel(): Promise<void> {
 }
 
 let notificationsEnabled = true
+let muteAdsEnabled = true
 updateToggleUI(notificationsEnabled)
+updateMuteToggleUI(muteAdsEnabled)
+setAudioToggleDisabled(!muteAdsEnabled)
 notifyToggleEl.dataset.animate = 'false'
 
 async function loadNotificationPreference(): Promise<void> {
@@ -248,7 +264,33 @@ async function loadNotificationPreference(): Promise<void> {
   }
 }
 
+async function loadMutePreference(): Promise<void> {
+  try {
+    const stored = await chrome.storage.local.get(AD_MUTE_ENABLED_KEY)
+    const value = stored[AD_MUTE_ENABLED_KEY]
+    if (typeof value === 'boolean') {
+      muteAdsEnabled = value
+      updateMuteToggleUI(muteAdsEnabled)
+      setAudioToggleDisabled(!muteAdsEnabled)
+    }
+  } catch {
+    // Ignore storage errors; keep default on.
+  }
+}
+
+muteToggleEl.addEventListener('click', () => {
+  muteToggleEl.dataset.animate = 'true'
+  muteAdsEnabled = !muteAdsEnabled
+  updateMuteToggleUI(muteAdsEnabled)
+  setAudioToggleDisabled(!muteAdsEnabled)
+  chrome.storage.local.set({ [AD_MUTE_ENABLED_KEY]: muteAdsEnabled })
+  setTimeout(() => {
+    muteToggleEl.dataset.animate = 'false'
+  }, 200)
+})
+
 notifyToggleEl.addEventListener('click', () => {
+  if (!muteAdsEnabled) return
   notifyToggleEl.dataset.animate = 'true'
   notificationsEnabled = !notificationsEnabled
   updateToggleUI(notificationsEnabled)
@@ -259,6 +301,7 @@ notifyToggleEl.addEventListener('click', () => {
 })
 
 loadNotificationPreference()
+loadMutePreference()
 logger.log('Popup opened')
 initStatsForActiveTab()
 fetchCurrentChannel()
