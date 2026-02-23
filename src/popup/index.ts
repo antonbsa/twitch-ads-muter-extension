@@ -115,7 +115,8 @@ function updateMuteStatsFromStats(
   const key = channel.toLowerCase()
   const channelStats = stats.channels.find((item) => item.channel === key)
   if (!channelStats) {
-    setStatsUnavailable()
+    mutedTodayValueEl.textContent = '0'
+    mutedTotalValueEl.textContent = '0'
     return
   }
 
