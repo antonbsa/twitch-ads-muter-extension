@@ -5,6 +5,7 @@ import type {
   PopupLogMessage,
 } from '../types'
 import { AUDIO_NOTIFICATION_KEY } from '../types'
+import { requestLiveData, sendPopupLog } from '../shared/messages'
 import { logger } from '../utils/logger'
 
 function mustGetElement<T extends HTMLElement>(id: string): T {
@@ -122,18 +123,7 @@ async function logToActiveTab(
   const tab = await getActiveTab()
   if (!tab?.id) return
 
-  const payload: PopupLogMessage = {
-    type: 'popupLog',
-    level,
-    message,
-    data,
-  }
-
-  try {
-    await chrome.tabs.sendMessage(tab.id, payload)
-  } catch {
-    // Ignore if content script is not available on this tab.
-  }
+  await sendPopupLog(tab.id, message, data, level)
 }
 
 async function loadStatsFromStorage(): Promise<void> {
@@ -204,9 +194,11 @@ async function fetchCurrentChannel(): Promise<void> {
   })
 
   try {
-    const response: GetDataResponse | undefined = await chrome.tabs.sendMessage(
+    const response: GetDataResponse | undefined = await requestLiveData(
       tab.id,
-      { type: 'getData', wait: true },
+      {
+        wait: true,
+      },
     )
 
     logToActiveTab('fetchCurrentChannel: getData response', response)

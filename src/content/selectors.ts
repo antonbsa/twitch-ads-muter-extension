@@ -33,6 +33,6 @@ export function isAdIndicatorVisible(): boolean {
 export function hasLiveDataElements(): boolean {
   return Boolean(
     document.querySelector(SELECTORS.viewers) ||
-      document.querySelector(SELECTORS.liveTime),
+    document.querySelector(SELECTORS.liveTime),
   )
 }
