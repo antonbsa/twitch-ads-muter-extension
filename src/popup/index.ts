@@ -21,12 +21,16 @@ const muteToggleEl = mustGetElement<HTMLButtonElement>('muteToggle')
 const notifyToggleEl = mustGetElement<HTMLButtonElement>('notifyToggle')
 const mutedTodayEl = mustGetElement<HTMLParagraphElement>('mutedToday')
 const mutedTotalEl = mustGetElement<HTMLParagraphElement>('mutedTotal')
+const mutedTimeEl = mustGetElement<HTMLParagraphElement>('mutedTime')
 const mutedTodayValueEl =
   mutedTodayEl.querySelector<HTMLSpanElement>('span') ??
   mustGetElement<HTMLSpanElement>('mutedTodayValue')
 const mutedTotalValueEl =
   mutedTotalEl.querySelector<HTMLSpanElement>('span') ??
   mustGetElement<HTMLSpanElement>('mutedTotalValue')
+const mutedTimeValueEl =
+  mutedTimeEl.querySelector<HTMLSpanElement>('span') ??
+  mustGetElement<HTMLSpanElement>('mutedTimeValue')
 const loadingClass = 'loading-dots'
 
 let cachedStats: AdMuteStats | undefined
@@ -77,6 +81,7 @@ function setAudioToggleDisabled(disabled: boolean): void {
 function setStatsUnavailable(): void {
   mutedTodayValueEl.textContent = '-'
   mutedTotalValueEl.textContent = '-'
+  mutedTimeValueEl.textContent = '-'
 }
 
 function getChannelFromTabUrl(url: string | undefined): string | null {
@@ -98,6 +103,21 @@ function getStartOfToday(): number {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
 }
 
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  if (hours > 0) {
+    return `${hours}h${minutes}m`
+  }
+  if (minutes > 0) {
+    return `${minutes}m${seconds}s`
+  }
+  return `${seconds}s`
+}
+
 function updateMuteStatsFromStats(
   channel: string | null,
   stats: AdMuteStats | undefined,
@@ -117,15 +137,23 @@ function updateMuteStatsFromStats(
   if (!channelStats) {
     mutedTodayValueEl.textContent = '0'
     mutedTotalValueEl.textContent = '0'
+    mutedTimeValueEl.textContent = '0'
     return
   }
 
   const todayStart = getStartOfToday()
   const todayCount = channelStats.log.filter((ts) => ts >= todayStart).length
   const totalCount = Math.max(0, Number(channelStats.allTimeCount ?? 0))
+  const totalMutedMs = Math.max(0, Number(channelStats.allTimeMutedMs ?? 0))
+  const averageMutedMs =
+    totalCount > 0 ? Math.round(totalMutedMs / totalCount) : 0
 
   mutedTodayValueEl.textContent = String(todayCount)
   mutedTotalValueEl.textContent = String(totalCount)
+  mutedTimeValueEl.textContent =
+    totalMutedMs > 0
+      ? `${formatDuration(totalMutedMs)} (${formatDuration(averageMutedMs)} avg)`
+      : '0'
 }
 
 async function logToActiveTab(

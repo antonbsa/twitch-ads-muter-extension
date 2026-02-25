@@ -61,6 +61,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 it('should record muted ad only after unmute happens', async () => {
@@ -75,6 +76,8 @@ it('should record muted ad only after unmute happens', async () => {
   getChannelFromUrlMock.mockReturnValue('hayashii')
   ensureMutedMock.mockResolvedValue(true)
   ensureUnmutedMock.mockResolvedValue(true)
+
+  vi.spyOn(Date, 'now').mockReturnValueOnce(1_000).mockReturnValueOnce(4_000)
 
   adIndicatorMock
     .mockReturnValueOnce(false)
@@ -95,5 +98,5 @@ it('should record muted ad only after unmute happens', async () => {
 
   expect(ensureUnmutedMock).toHaveBeenCalledTimes(1)
   expect(recordMutedAdMock).toHaveBeenCalledTimes(1)
-  expect(recordMutedAdMock).toHaveBeenCalledWith('hayashii')
+  expect(recordMutedAdMock).toHaveBeenCalledWith('hayashii', 3_000)
 })

@@ -1,10 +1,17 @@
 import type { AdMuteStats } from '../types'
 import { AD_MUTE_STATS_KEY } from '../types'
 
-export async function recordMutedAd(channel: string | null): Promise<void> {
+export async function recordMutedAd(
+  channel: string | null,
+  durationMs?: number,
+): Promise<void> {
   const key = (channel ?? 'unknown').toLowerCase()
   const timestamp = Date.now()
   const pruneBefore = timestamp - 30 * 24 * 60 * 60 * 1000
+  const resolvedDurationMs =
+    Number.isFinite(durationMs) && Number(durationMs) >= 0
+      ? Number(durationMs)
+      : null
 
   try {
     const stored = await chrome.storage.local.get(AD_MUTE_STATS_KEY)
@@ -16,6 +23,11 @@ export async function recordMutedAd(channel: string | null): Promise<void> {
     channelStats.allTimeCount += 1
     channelStats.lastMutedAt = timestamp
     channelStats.log.push(timestamp)
+    if (resolvedDurationMs !== null) {
+      channelStats.allTimeMutedMs =
+        (channelStats.allTimeMutedMs ?? 0) + resolvedDurationMs
+      stats.allTimeMutedMs = (stats.allTimeMutedMs ?? 0) + resolvedDurationMs
+    }
 
     if (!stats.channels.includes(channelStats)) {
       stats.channels.push(channelStats)
@@ -34,6 +46,7 @@ function createEmptyStats(): AdMuteStats {
   return {
     version: 2,
     allTimeTotal: 0,
+    allTimeMutedMs: 0,
     channels: [],
   }
 }
@@ -42,6 +55,7 @@ function createChannelStats(channel: string): AdMuteStats['channels'][number] {
   return {
     channel,
     allTimeCount: 0,
+    allTimeMutedMs: 0,
     log: [],
   }
 }
@@ -56,11 +70,13 @@ function normalizeMuteStats(value: unknown): AdMuteStats {
     return {
       version: 2,
       allTimeTotal: Number(candidate.allTimeTotal ?? 0),
+      allTimeMutedMs: Number(candidate.allTimeMutedMs ?? 0),
       channels: candidate.channels
         .filter((item) => item && typeof item.channel === 'string')
         .map((item) => ({
           channel: item.channel.toLowerCase(),
           allTimeCount: Number(item.allTimeCount ?? 0),
+          allTimeMutedMs: Number(item.allTimeMutedMs ?? 0),
           log: Array.isArray(item.log)
             ? item.log.filter((ts) => Number.isFinite(ts))
             : [],

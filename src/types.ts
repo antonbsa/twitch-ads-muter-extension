@@ -14,9 +14,11 @@ export type LiveData = {
 export type AdMuteStats = {
   version: 2
   allTimeTotal: number
+  allTimeMutedMs?: number
   channels: Array<{
     channel: string
     allTimeCount: number
+    allTimeMutedMs?: number
     log: number[]
     lastMutedAt?: number
   }>

@@ -33,19 +33,23 @@ it('should render default stats placeholders and toggles', () => {
   const channel = document.getElementById('channel')
   const mutedToday = document.getElementById('mutedToday')
   const mutedTotal = document.getElementById('mutedTotal')
+  const mutedTime = document.getElementById('mutedTime')
   const muteToggle = document.getElementById('muteToggle')
   const notifyToggle = document.getElementById('notifyToggle')
 
   expect(channel).not.toBeNull()
   expect(mutedToday).not.toBeNull()
   expect(mutedTotal).not.toBeNull()
+  expect(mutedTime).not.toBeNull()
   expect(muteToggle).not.toBeNull()
   expect(notifyToggle).not.toBeNull()
 
   const mutedTodayValue = mutedToday?.querySelector('span')?.textContent
   const mutedTotalValue = mutedTotal?.querySelector('span')?.textContent
+  const mutedTimeValue = mutedTime?.querySelector('span')?.textContent
   expect(mutedTodayValue).toBe('-')
   expect(mutedTotalValue).toBe('-')
+  expect(mutedTimeValue).toBe('-')
 })
 
 it('should render stats from storage when channel data exists', async () => {
@@ -53,10 +57,12 @@ it('should render stats from storage when channel data exists', async () => {
   __test.storageData[AD_MUTE_STATS_KEY] = {
     version: 2,
     allTimeTotal: 2,
+    allTimeMutedMs: 105000,
     channels: [
       {
         channel: 'hayashii',
         allTimeCount: 2,
+        allTimeMutedMs: 105000,
         log: [now],
       },
     ],
@@ -87,15 +93,18 @@ it('should render stats from storage when channel data exists', async () => {
 
   const mutedToday = document.querySelector('#mutedToday span')?.textContent
   const mutedTotal = document.querySelector('#mutedTotal span')?.textContent
+  const mutedTime = document.querySelector('#mutedTime span')?.textContent
 
   expect(mutedToday).toBe('1')
   expect(mutedTotal).toBe('2')
+  expect(mutedTime).toBe('1m45s (53s avg)')
 })
 
 it('should set stats to 0 when channel has no stored data', async () => {
   __test.storageData[AD_MUTE_STATS_KEY] = {
     version: 2,
     allTimeTotal: 0,
+    allTimeMutedMs: 0,
     channels: [],
   }
 
@@ -124,9 +133,11 @@ it('should set stats to 0 when channel has no stored data', async () => {
 
   const mutedToday = document.querySelector('#mutedToday span')?.textContent
   const mutedTotal = document.querySelector('#mutedTotal span')?.textContent
+  const mutedTime = document.querySelector('#mutedTime span')?.textContent
 
   expect(mutedToday).toBe('0')
   expect(mutedTotal).toBe('0')
+  expect(mutedTime).toBe('0')
 })
 
 it('should disable audio toggle when mute ads is off', async () => {
