@@ -8,21 +8,20 @@
     "lint:fix": "eslint . --fix",
     "build": "node build.mjs",
     "dev": "node build.mjs --watch",
-    "test": "NODE_OPTIONS=--no-deprecation jest",
-    "test:watch": "NODE_OPTIONS=--no-deprecation jest --watch"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:list": "vitest list"
   },
   "devDependencies": {
     "@eslint/js": "^8.57.0",
     "@rocketseat/eslint-config": "^2.2.2",
-    "@types/jest": "^29.5.12",
     "eslint-plugin-import": "^2.29.1",
     "chokidar": "^3.6.0",
     "chrome-types": "^0.1.320",
     "esbuild": "^0.27.3",
     "eslint": "^8.57.1",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "ts-jest": "^29.1.2",
-    "typescript": "^5.4.5"
+    "jsdom": "^24.0.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.4.0"
   }
 }

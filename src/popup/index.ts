@@ -225,13 +225,17 @@ async function fetchCurrentChannel(): Promise<void> {
     }
 
     renderChannel(response.data)
-    if (response.data.channel && response.data.channel !== currentChannel) {
-      currentChannel = response.data.channel
+    if (response.data.channel) {
+      if (response.data.channel !== currentChannel) {
+        currentChannel = response.data.channel
+      }
+
       if (cachedStats) {
         updateMuteStatsFromStats(currentChannel, cachedStats)
       } else {
         setStatsUnavailable()
       }
+
       await loadStatsFromStorage()
     }
   } catch (error) {

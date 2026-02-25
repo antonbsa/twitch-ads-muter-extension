@@ -1,4 +1,6 @@
-/// <reference types="jest" />
+/// <reference types="vitest/globals" />
+import { vi } from 'vitest'
+
 type Listener = (...args: unknown[]) => void
 
 type StorageChange = { newValue?: unknown; oldValue?: unknown }
@@ -6,8 +8,8 @@ type StorageChangeMap = Record<string, StorageChange>
 
 type ChromeMock = {
   tabs: {
-    sendMessage: jest.Mock<Promise<unknown>, [number, unknown] | []>
-    query: jest.Mock<Promise<chrome.tabs.Tab[]>, [unknown?]>
+    sendMessage: ReturnType<typeof vi.fn>
+    query: ReturnType<typeof vi.fn>
   }
   runtime: {
     onMessage: { addListener: (fn: Listener) => void }
@@ -15,9 +17,13 @@ type ChromeMock = {
   }
   storage: {
     local: {
-      get: jest.Mock<Promise<Record<string, unknown>>, [unknown?]>
-      set: jest.Mock<Promise<void>, [Record<string, unknown>]>
-      getBytesInUse: jest.Mock<Promise<number>, [unknown?]>
+      get: ReturnType<
+        typeof vi.fn<[keys?: unknown], Promise<Record<string, unknown>>>
+      >
+      set: ReturnType<
+        typeof vi.fn<[items: Record<string, unknown>], Promise<void>>
+      >
+      getBytesInUse: ReturnType<typeof vi.fn<[], Promise<number>>>
     }
     onChanged: {
       addListener: (
@@ -34,8 +40,8 @@ const storageData: Record<string, unknown> = {}
 
 const chromeMock: ChromeMock = {
   tabs: {
-    sendMessage: jest.fn(async () => undefined),
-    query: jest.fn(async () => []),
+    sendMessage: vi.fn(),
+    query: vi.fn(),
   },
   runtime: {
     onMessage: {
@@ -47,17 +53,19 @@ const chromeMock: ChromeMock = {
   },
   storage: {
     local: {
-      get: jest.fn(async (keys?: unknown) => {
-        if (!keys) return { ...storageData }
-        if (typeof keys === 'string') return { [keys]: storageData[keys] }
+      get: vi.fn((keys?: unknown) => {
+        if (!keys) return Promise.resolve({ ...storageData })
+        if (typeof keys === 'string')
+          return Promise.resolve({ [keys]: storageData[keys] })
         const result: Record<string, unknown> = {}
         for (const key of keys as string[]) result[key] = storageData[key]
-        return result
+        return Promise.resolve(result)
       }),
-      set: jest.fn(async (items: Record<string, unknown>) => {
+      set: vi.fn((items: Record<string, unknown>) => {
         Object.assign(storageData, items)
+        return Promise.resolve()
       }),
-      getBytesInUse: jest.fn(async () => 0),
+      getBytesInUse: vi.fn(() => Promise.resolve(0)),
     },
     onChanged: {
       addListener: (

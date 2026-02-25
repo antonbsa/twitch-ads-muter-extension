@@ -1,26 +1,25 @@
+import { vi } from 'vitest'
 import { logger, setDebugEnabled } from '../src/utils/logger'
 
-describe('logger', () => {
-  afterEach(() => {
-    setDebugEnabled(false)
-    jest.restoreAllMocks()
-  })
+afterEach(() => {
+  setDebugEnabled(false)
+  vi.restoreAllMocks()
+})
 
-  it('should not log when debug disabled', () => {
-    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
-    setDebugEnabled(false)
+it('should not log when debug disabled', () => {
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+  setDebugEnabled(false)
 
-    logger.log('test')
+  logger.log('test')
 
-    expect(logSpy).not.toHaveBeenCalled()
-  })
+  expect(logSpy).not.toHaveBeenCalled()
+})
 
-  it('should log with prefix when debug enabled', () => {
-    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
-    setDebugEnabled(true)
+it('should log with prefix when debug enabled', () => {
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+  setDebugEnabled(true)
 
-    logger.log('hello')
+  logger.log('hello')
 
-    expect(logSpy).toHaveBeenCalledWith('[Twitch ads muter]', 'hello')
-  })
+  expect(logSpy).toHaveBeenCalledWith('[Twitch ads muter]', 'hello')
 })

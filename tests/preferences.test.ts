@@ -15,38 +15,36 @@ declare const __test: {
   >
 }
 
-describe('preferences', () => {
-  beforeEach(() => {
-    for (const key of Object.keys(__test.storageData)) {
-      delete __test.storageData[key]
-    }
-  })
+beforeEach(() => {
+  for (const key of Object.keys(__test.storageData)) {
+    delete __test.storageData[key]
+  }
+})
 
-  it('should default to true when storage has no values', async () => {
-    await setupPreferences()
+it('should default to true when storage has no values', async () => {
+  await setupPreferences()
 
-    expect(isAudioEnabled()).toBe(true)
-    expect(isMuteAdsEnabled()).toBe(true)
-  })
+  expect(isAudioEnabled()).toBe(true)
+  expect(isMuteAdsEnabled()).toBe(true)
+})
 
-  it('should load initial values from storage', async () => {
-    __test.storageData[AUDIO_NOTIFICATION_KEY] = false
-    __test.storageData[AD_MUTE_ENABLED_KEY] = false
+it('should load initial values from storage', async () => {
+  __test.storageData[AUDIO_NOTIFICATION_KEY] = false
+  __test.storageData[AD_MUTE_ENABLED_KEY] = false
 
-    await setupPreferences()
+  await setupPreferences()
 
-    expect(isAudioEnabled()).toBe(false)
-    expect(isMuteAdsEnabled()).toBe(false)
-  })
+  expect(isAudioEnabled()).toBe(false)
+  expect(isMuteAdsEnabled()).toBe(false)
+})
 
-  it('should update values on storage change', async () => {
-    await setupPreferences()
-    const listener = __test.storageListeners[__test.storageListeners.length - 1]
+it('should update values on storage change', async () => {
+  await setupPreferences()
+  const listener = __test.storageListeners[__test.storageListeners.length - 1]
 
-    listener({ [AUDIO_NOTIFICATION_KEY]: { newValue: false } }, 'local')
-    listener({ [AD_MUTE_ENABLED_KEY]: { newValue: false } }, 'local')
+  listener({ [AUDIO_NOTIFICATION_KEY]: { newValue: false } }, 'local')
+  listener({ [AD_MUTE_ENABLED_KEY]: { newValue: false } }, 'local')
 
-    expect(isAudioEnabled()).toBe(false)
-    expect(isMuteAdsEnabled()).toBe(false)
-  })
+  expect(isAudioEnabled()).toBe(false)
+  expect(isMuteAdsEnabled()).toBe(false)
 })
