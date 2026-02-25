@@ -18,12 +18,13 @@ export async function ensureMuted(): Promise<boolean> {
   return true
 }
 
-export async function ensureUnmuted(): Promise<void> {
+export async function ensureUnmuted(): Promise<boolean> {
   const button = getMuteButton()
-  if (!button) return
+  if (!button) return false
   const isMuted = getIsMuted()
-  if (isMuted === false) return
+  if (isMuted === false) return false
 
   playSound('unmute')
   button.click()
+  return true
 }

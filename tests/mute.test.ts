@@ -44,7 +44,8 @@ it('should click when muted', async () => {
   setupSlider('0')
   const button = setupButton()
 
-  await ensureUnmuted()
+  const didUnmute = await ensureUnmuted()
 
+  expect(didUnmute).toBe(true)
   expect(button.click).toHaveBeenCalled()
 })

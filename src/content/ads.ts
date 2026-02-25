@@ -5,6 +5,8 @@ import { getChannelFromUrl } from './live-data'
 import { isMuteAdsEnabled } from './preferences'
 let adActive = false
 let mutedByExtension = false
+let pendingMuteCount = false
+let pendingChannel: string | null = null
 
 async function handleAdState(): Promise<void> {
   if (!isMuteAdsEnabled()) return
@@ -14,16 +16,21 @@ async function handleAdState(): Promise<void> {
     adActive = active
     if (adActive) {
       mutedByExtension = false
+      pendingMuteCount = false
+      pendingChannel = getChannelFromUrl()
       const didMute = await ensureMuted()
       mutedByExtension = didMute
-      if (didMute) {
-        recordMutedAd(getChannelFromUrl())
-      }
+      pendingMuteCount = didMute
     } else {
       if (mutedByExtension) {
-        await ensureUnmuted()
+        const didUnmute = await ensureUnmuted()
+        if (didUnmute && pendingMuteCount) {
+          recordMutedAd(pendingChannel)
+        }
       }
       mutedByExtension = false
+      pendingMuteCount = false
+      pendingChannel = null
     }
   }
 }
