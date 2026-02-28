@@ -9,8 +9,7 @@
     "build": "node build.mjs",
     "dev": "node build.mjs --watch",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:list": "vitest list"
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@eslint/js": "^8.57.0",
