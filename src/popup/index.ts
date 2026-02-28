@@ -28,9 +28,11 @@ const mutedTodayValueEl =
 const mutedTotalValueEl =
   mutedTotalEl.querySelector<HTMLSpanElement>('span') ??
   mustGetElement<HTMLSpanElement>('mutedTotalValue')
+const mutedTotalSubEl = mustGetElement<HTMLSpanElement>('mutedTotalSub')
 const mutedTimeValueEl =
   mutedTimeEl.querySelector<HTMLSpanElement>('span') ??
   mustGetElement<HTMLSpanElement>('mutedTimeValue')
+const mutedTimeSubEl = mustGetElement<HTMLSpanElement>('mutedTimeSub')
 const loadingClass = 'loading-dots'
 
 let cachedStats: AdMuteStats | undefined
@@ -82,6 +84,10 @@ function setStatsUnavailable(): void {
   mutedTodayValueEl.textContent = '-'
   mutedTotalValueEl.textContent = '-'
   mutedTimeValueEl.textContent = '-'
+  mutedTotalSubEl.textContent = ''
+  mutedTimeSubEl.textContent = ''
+  mutedTotalSubEl.classList.add('is-hidden')
+  mutedTimeSubEl.classList.add('is-hidden')
 }
 
 function getChannelFromTabUrl(url: string | undefined): string | null {
@@ -136,8 +142,12 @@ function updateMuteStatsFromStats(
   const channelStats = stats.channels.find((item) => item.channel === key)
   if (!channelStats) {
     mutedTodayValueEl.textContent = '0'
-    mutedTotalValueEl.textContent = '0 (0 in the last 14 days)'
+    mutedTotalValueEl.textContent = '0'
     mutedTimeValueEl.textContent = '0'
+    mutedTotalSubEl.textContent = ''
+    mutedTimeSubEl.textContent = ''
+    mutedTotalSubEl.classList.add('is-hidden')
+    mutedTimeSubEl.classList.add('is-hidden')
     return
   }
 
@@ -152,13 +162,14 @@ function updateMuteStatsFromStats(
   const averageMutedMs =
     totalCount > 0 ? Math.round(totalMutedMs / totalCount) : 0
 
-  const totalLabel = `${totalCount} (${last14DaysCount} in the last 14 days)`
   mutedTodayValueEl.textContent = String(todayCount)
-  mutedTotalValueEl.textContent = totalLabel
+  mutedTotalValueEl.textContent = String(totalCount)
   mutedTimeValueEl.textContent =
-    totalMutedMs > 0
-      ? `${formatDuration(totalMutedMs)} (${formatDuration(averageMutedMs)} avg)`
-      : '0'
+    totalMutedMs > 0 ? formatDuration(totalMutedMs) : '0'
+  mutedTotalSubEl.textContent = `${last14DaysCount} in the last 14 days`
+  mutedTotalSubEl.classList.toggle('is-hidden', last14DaysCount === 0)
+  mutedTimeSubEl.textContent = `${formatDuration(averageMutedMs)} avg`
+  mutedTimeSubEl.classList.toggle('is-hidden', averageMutedMs === 0)
 }
 
 async function logToActiveTab(

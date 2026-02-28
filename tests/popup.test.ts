@@ -47,9 +47,15 @@ it('should render default stats placeholders and toggles', () => {
   const mutedTodayValue = mutedToday?.querySelector('span')?.textContent
   const mutedTotalValue = mutedTotal?.querySelector('span')?.textContent
   const mutedTimeValue = mutedTime?.querySelector('span')?.textContent
+  const mutedTotalSub = document.getElementById('mutedTotalSub')
+  const mutedTimeSub = document.getElementById('mutedTimeSub')
   expect(mutedTodayValue).toBe('-')
   expect(mutedTotalValue).toBe('-')
   expect(mutedTimeValue).toBe('-')
+  expect(mutedTotalSub?.textContent).toBe('')
+  expect(mutedTimeSub?.textContent).toBe('')
+  expect(mutedTotalSub?.classList.contains('is-hidden')).toBe(true)
+  expect(mutedTimeSub?.classList.contains('is-hidden')).toBe(true)
 })
 
 it('should render stats from storage when channel data exists', async () => {
@@ -94,10 +100,16 @@ it('should render stats from storage when channel data exists', async () => {
   const mutedToday = document.querySelector('#mutedToday span')?.textContent
   const mutedTotal = document.querySelector('#mutedTotal span')?.textContent
   const mutedTime = document.querySelector('#mutedTime span')?.textContent
+  const mutedTotalSub = document.getElementById('mutedTotalSub')
+  const mutedTimeSub = document.getElementById('mutedTimeSub')
 
   expect(mutedToday).toBe('1')
   expect(mutedTotal).toBe('2')
-  expect(mutedTime).toBe('1m45s (53s avg)')
+  expect(mutedTime).toBe('1m45s')
+  expect(mutedTotalSub?.textContent).toBe('1 in the last 14 days')
+  expect(mutedTotalSub?.classList.contains('is-hidden')).toBe(false)
+  expect(mutedTimeSub?.textContent).toBe('53s avg')
+  expect(mutedTimeSub?.classList.contains('is-hidden')).toBe(false)
 })
 
 it('should set stats to 0 when channel has no stored data', async () => {
@@ -134,10 +146,14 @@ it('should set stats to 0 when channel has no stored data', async () => {
   const mutedToday = document.querySelector('#mutedToday span')?.textContent
   const mutedTotal = document.querySelector('#mutedTotal span')?.textContent
   const mutedTime = document.querySelector('#mutedTime span')?.textContent
+  const mutedTotalSub = document.getElementById('mutedTotalSub')
+  const mutedTimeSub = document.getElementById('mutedTimeSub')
 
   expect(mutedToday).toBe('0')
   expect(mutedTotal).toBe('0')
   expect(mutedTime).toBe('0')
+  expect(mutedTotalSub?.classList.contains('is-hidden')).toBe(true)
+  expect(mutedTimeSub?.classList.contains('is-hidden')).toBe(true)
 })
 
 it('should disable audio toggle when mute ads is off', async () => {

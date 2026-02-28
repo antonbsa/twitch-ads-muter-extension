@@ -53,6 +53,18 @@ h1 {
   color: var(--muted);
 }
 
+.stat-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.stat-sub.is-hidden {
+  display: none;
+}
+
 .toggle {
   width: 100%;
   margin-top: 10px;
