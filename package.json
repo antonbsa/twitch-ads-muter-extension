@@ -2,6 +2,7 @@
   "name": "twitch-ads-mute-extension",
   "version": "0.1.0",
   "description": "Auto mutes Twitch livestream when ads play",
+  "type": "module",
   "license": "ISC",
   "scripts": {
     "lint": "eslint .",
