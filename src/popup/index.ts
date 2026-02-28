@@ -136,20 +136,25 @@ function updateMuteStatsFromStats(
   const channelStats = stats.channels.find((item) => item.channel === key)
   if (!channelStats) {
     mutedTodayValueEl.textContent = '0'
-    mutedTotalValueEl.textContent = '0'
+    mutedTotalValueEl.textContent = '0 (0 in the last 14 days)'
     mutedTimeValueEl.textContent = '0'
     return
   }
 
   const todayStart = getStartOfToday()
   const todayCount = channelStats.log.filter((ts) => ts >= todayStart).length
+  const last14DaysStart = Date.now() - 14 * 24 * 60 * 60 * 1000
+  const last14DaysCount = channelStats.log.filter(
+    (ts) => ts >= last14DaysStart,
+  ).length
   const totalCount = Math.max(0, Number(channelStats.allTimeCount ?? 0))
   const totalMutedMs = Math.max(0, Number(channelStats.allTimeMutedMs ?? 0))
   const averageMutedMs =
     totalCount > 0 ? Math.round(totalMutedMs / totalCount) : 0
 
+  const totalLabel = `${totalCount} (${last14DaysCount} in the last 14 days)`
   mutedTodayValueEl.textContent = String(todayCount)
-  mutedTotalValueEl.textContent = String(totalCount)
+  mutedTotalValueEl.textContent = totalLabel
   mutedTimeValueEl.textContent =
     totalMutedMs > 0
       ? `${formatDuration(totalMutedMs)} (${formatDuration(averageMutedMs)} avg)`
