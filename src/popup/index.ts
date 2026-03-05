@@ -4,7 +4,11 @@ import type {
   AdMuteStats,
   PopupLogMessage,
 } from '../types'
-import { AUDIO_NOTIFICATION_KEY, AD_MUTE_ENABLED_KEY } from '../types'
+import {
+  AUDIO_NOTIFICATION_KEY,
+  AD_MUTE_ENABLED_KEY,
+  AD_MUTE_STATS_KEY,
+} from '../types'
 import { requestLiveData, sendPopupLog } from '../shared/messages'
 import { logger } from '../utils/logger'
 
@@ -212,7 +216,7 @@ async function loadStatsFromStorage(): Promise<void> {
   }
 
   try {
-    const stored = await chrome.storage.local.get('adMuteStats')
+    const stored = await chrome.storage.local.get(AD_MUTE_STATS_KEY)
     const stats = stored.adMuteStats as AdMuteStats | undefined
     const serialized = stats ? JSON.stringify(stats) : null
 
