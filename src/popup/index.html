@@ -3,30 +3,50 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Twitch Ads muter</title>
+    <title data-i18n="popupTitle">Twitch Ads muter</title>
     <link rel="stylesheet" href="index.css" />
   </head>
   <body>
     <main>
-      <h1>Twitch Ads muter</h1>
-      <p id="channel" class="hint">Auto-checking current channel</p>
+      <button
+        id="settingsButton"
+        class="settings-button"
+        type="button"
+        aria-haspopup="true"
+        aria-expanded="false"
+        data-i18n="settingsButtonLabel"
+        data-i18n-attr="aria-label,title"
+      >
+      </button>
+      <div id="settingsMenu" class="settings-menu is-hidden" role="menu">
+        <button id="languageToggle" class="settings-item" type="button"></button>
+      </div>
+      <h1 data-i18n="popupHeading">Twitch Ads muter</h1>
+      <p id="channel" class="hint">Auto-checking current channel...</p>
       <section class="ad-stats" aria-live="polite">
-        <p id="mutedToday" class="stat">Ads muted today: <span>-</span></p>
+        <p id="mutedToday" class="stat">
+          <span data-i18n="mutedTodayLabel">Ads muted today:</span>
+          <span class="stat-value">-</span>
+        </p>
         <p id="mutedTotal" class="stat">
-          Total ads muted: <span>-</span>
+          <span data-i18n="mutedTotalLabel">Total ads muted:</span>
+          <span class="stat-value">-</span>
           <span id="mutedTotalSub" class="stat-sub is-hidden"></span>
         </p>
         <p id="mutedTime" class="stat">
-          Total muted time: <span>-</span>
+          <span data-i18n="mutedTimeLabel">Total muted time:</span>
+          <span class="stat-value">-</span>
           <span id="mutedTimeSub" class="stat-sub is-hidden"></span>
         </p>
       </section>
       <button id="muteToggle" class="toggle" aria-pressed="true">
-        <span class="toggle-label">Mute ads</span>
+        <span class="toggle-label" data-i18n="toggleMuteLabel">Mute ads</span>
         <span class="toggle-switch" aria-hidden="true"></span>
       </button>
       <button id="notifyToggle" class="toggle" aria-pressed="true">
-        <span class="toggle-label">Audio notifications</span>
+        <span class="toggle-label" data-i18n="toggleNotifyLabel">
+          Audio notifications
+        </span>
         <span class="toggle-switch" aria-hidden="true"></span>
       </button>
     </main>

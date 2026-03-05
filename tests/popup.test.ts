@@ -6,10 +6,12 @@ import {
   AD_MUTE_ENABLED_KEY,
   AD_MUTE_STATS_KEY,
   AUDIO_NOTIFICATION_KEY,
+  LANG_KEY,
 } from '../src/types'
 
 declare const __test: {
   storageData: Record<string, unknown>
+  setUiLanguage: (language: string) => void
 }
 
 function loadPopupHtml(): void {
@@ -25,6 +27,7 @@ beforeEach(() => {
   for (const key of Object.keys(__test.storageData)) {
     delete __test.storageData[key]
   }
+  __test.setUiLanguage('en-US')
   vi.clearAllMocks()
   loadPopupHtml()
 })
@@ -44,9 +47,9 @@ it('should render default stats placeholders and toggles', () => {
   expect(muteToggle).not.toBeNull()
   expect(notifyToggle).not.toBeNull()
 
-  const mutedTodayValue = mutedToday?.querySelector('span')?.textContent
-  const mutedTotalValue = mutedTotal?.querySelector('span')?.textContent
-  const mutedTimeValue = mutedTime?.querySelector('span')?.textContent
+  const mutedTodayValue = mutedToday?.querySelector('.stat-value')?.textContent
+  const mutedTotalValue = mutedTotal?.querySelector('.stat-value')?.textContent
+  const mutedTimeValue = mutedTime?.querySelector('.stat-value')?.textContent
   const mutedTotalSub = document.getElementById('mutedTotalSub')
   const mutedTimeSub = document.getElementById('mutedTimeSub')
   expect(mutedTodayValue).toBe('-')
@@ -97,9 +100,15 @@ it('should render stats from storage when channel data exists', async () => {
   await flushAsync()
   await flushAsync()
 
-  const mutedToday = document.querySelector('#mutedToday span')?.textContent
-  const mutedTotal = document.querySelector('#mutedTotal span')?.textContent
-  const mutedTime = document.querySelector('#mutedTime span')?.textContent
+  const mutedToday = document.querySelector(
+    '#mutedToday .stat-value',
+  )?.textContent
+  const mutedTotal = document.querySelector(
+    '#mutedTotal .stat-value',
+  )?.textContent
+  const mutedTime = document.querySelector(
+    '#mutedTime .stat-value',
+  )?.textContent
   const mutedTotalSub = document.getElementById('mutedTotalSub')
   const mutedTimeSub = document.getElementById('mutedTimeSub')
 
@@ -143,9 +152,15 @@ it('should set stats to 0 when channel has no stored data', async () => {
   await flushAsync()
   await flushAsync()
 
-  const mutedToday = document.querySelector('#mutedToday span')?.textContent
-  const mutedTotal = document.querySelector('#mutedTotal span')?.textContent
-  const mutedTime = document.querySelector('#mutedTime span')?.textContent
+  const mutedToday = document.querySelector(
+    '#mutedToday .stat-value',
+  )?.textContent
+  const mutedTotal = document.querySelector(
+    '#mutedTotal .stat-value',
+  )?.textContent
+  const mutedTime = document.querySelector(
+    '#mutedTime .stat-value',
+  )?.textContent
   const mutedTotalSub = document.getElementById('mutedTotalSub')
   const mutedTimeSub = document.getElementById('mutedTimeSub')
 
@@ -235,4 +250,124 @@ it('should update storage when toggles are clicked', async () => {
   expect(setSpy).toHaveBeenCalledWith({
     [AUDIO_NOTIFICATION_KEY]: expect.any(Boolean),
   })
+})
+
+it('should apply stored locale preference', async () => {
+  __test.storageData[LANG_KEY] = 'pt_BR'
+
+  vi.resetModules()
+  await import('../src/popup/index')
+
+  await flushAsync()
+
+  const mutedTodayLabel = document.querySelector(
+    '#mutedToday [data-i18n]',
+  )?.textContent
+  const settingsButton = document.getElementById('settingsButton')
+  const muteToggle = document.getElementById('muteToggle')
+
+  expect(mutedTodayLabel).toBe('Anúncios silenciados hoje:')
+  expect(settingsButton?.getAttribute('title')).toBe('Configurações')
+  expect(muteToggle?.getAttribute('aria-label')).toContain('Silenciar anúncios')
+})
+
+it('should fall back to UI language when preference is missing', async () => {
+  __test.setUiLanguage('pt-BR')
+
+  vi.resetModules()
+  await import('../src/popup/index')
+
+  await flushAsync()
+
+  const mutedTodayLabel = document.querySelector(
+    '#mutedToday [data-i18n]',
+  )?.textContent
+  const settingsButton = document.getElementById('settingsButton')
+
+  expect(mutedTodayLabel).toBe('Anúncios silenciados hoje:')
+  expect(settingsButton?.getAttribute('title')).toBe('Configurações')
+})
+
+it('should toggle language and persist preference', async () => {
+  const setSpy = vi.spyOn(chrome.storage.local, 'set')
+
+  vi.resetModules()
+  await import('../src/popup/index')
+
+  await flushAsync()
+
+  const settingsButton = document.getElementById(
+    'settingsButton',
+  ) as HTMLButtonElement
+  const languageToggle = document.getElementById(
+    'languageToggle',
+  ) as HTMLButtonElement
+
+  settingsButton.click()
+  languageToggle.click()
+  await flushAsync()
+
+  expect(setSpy).toHaveBeenCalledWith({ [LANG_KEY]: 'pt_BR' })
+  expect(languageToggle.textContent).toBe('Idioma: Português (Brasil)')
+
+  languageToggle.click()
+  await flushAsync()
+
+  expect(setSpy).toHaveBeenCalledWith({ [LANG_KEY]: 'en' })
+  expect(languageToggle.textContent).toBe('Language: English')
+})
+
+it('should re-translate channel status when language changes', async () => {
+  vi.spyOn(chrome.tabs, 'query').mockImplementation(async () => [
+    { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,
+  ])
+
+  vi.spyOn(chrome.tabs, 'sendMessage').mockImplementationOnce(async () => ({
+    ok: false,
+  }))
+
+  vi.resetModules()
+  await import('../src/popup/index')
+
+  await flushAsync()
+  await flushAsync()
+
+  const channel = document.getElementById('channel') as HTMLParagraphElement
+  expect(channel.textContent).toBe('Could not read Twitch data.')
+
+  const settingsButton = document.getElementById(
+    'settingsButton',
+  ) as HTMLButtonElement
+  const languageToggle = document.getElementById(
+    'languageToggle',
+  ) as HTMLButtonElement
+
+  settingsButton.click()
+  languageToggle.click()
+  await flushAsync()
+
+  expect(channel.textContent).toBe('Não foi possível ler os dados da Twitch.')
+})
+
+it('should update aria labels and settings tooltip on language change', async () => {
+  vi.resetModules()
+  await import('../src/popup/index')
+
+  await flushAsync()
+
+  const settingsButton = document.getElementById(
+    'settingsButton',
+  ) as HTMLButtonElement
+  const muteToggle = document.getElementById('muteToggle') as HTMLButtonElement
+  const languageToggle = document.getElementById(
+    'languageToggle',
+  ) as HTMLButtonElement
+
+  settingsButton.click()
+  languageToggle.click()
+  await flushAsync()
+
+  expect(settingsButton.getAttribute('title')).toBe('Configurações')
+  expect(settingsButton.getAttribute('aria-label')).toBe('Configurações')
+  expect(muteToggle.getAttribute('aria-label')).toContain('Silenciar anúncios')
 })

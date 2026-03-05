@@ -1,0 +1,98 @@
+{
+  "extensionName": {
+    "message": "Silenciador de anúncios da Twitch",
+    "description": "Nome da extensão exibido no Chrome"
+  },
+  "extensionDescription": {
+    "message": "Registra informações do canal da Twitch a partir de páginas ao vivo.",
+    "description": "Descrição da extensão exibida no Chrome"
+  },
+  "actionTitle": {
+    "message": "Silenciador de anúncios da Twitch",
+    "description": "Título do botão da extensão"
+  },
+  "popupTitle": {
+    "message": "Silenciador de anúncios da Twitch",
+    "description": "Título do documento do popup"
+  },
+  "popupHeading": {
+    "message": "Silenciador de anúncios da Twitch",
+    "description": "Cabeçalho principal do popup"
+  },
+  "settingsButtonLabel": {
+    "message": "Configurações",
+    "description": "Rótulo do botão de configurações"
+  },
+  "menuLanguageLabel": {
+    "message": "Idioma: $1",
+    "description": "Rótulo do item de menu para idioma"
+  },
+  "languageNameEn": {
+    "message": "Inglês",
+    "description": "Nome do idioma inglês"
+  },
+  "languageNamePtBR": {
+    "message": "Português (Brasil)",
+    "description": "Nome do idioma português brasileiro"
+  },
+  "channelAutoChecking": {
+    "message": "Verificando automaticamente o canal atual...",
+    "description": "Status do popup enquanto carrega o canal atual"
+  },
+  "channelNoActiveTab": {
+    "message": "Nenhuma aba ativa encontrada.",
+    "description": "Erro do popup quando não há aba ativa"
+  },
+  "channelCannotRead": {
+    "message": "Não foi possível ler os dados da Twitch.",
+    "description": "Erro do popup quando não é possível ler os dados"
+  },
+  "channelContentUnavailable": {
+    "message": "O script de conteúdo não está disponível nesta página.",
+    "description": "Erro do popup quando o script de conteúdo está ausente"
+  },
+  "mutedTodayLabel": {
+    "message": "Anúncios silenciados hoje:",
+    "description": "Rótulo da estatística de anúncios silenciados hoje"
+  },
+  "mutedTotalLabel": {
+    "message": "Total de anúncios silenciados:",
+    "description": "Rótulo da estatística do total de anúncios silenciados"
+  },
+  "mutedTimeLabel": {
+    "message": "Tempo total silenciado:",
+    "description": "Rótulo da estatística de tempo total silenciado"
+  },
+  "toggleMuteLabel": {
+    "message": "Silenciar anúncios",
+    "description": "Rótulo do botão de silenciar anúncios"
+  },
+  "toggleNotifyLabel": {
+    "message": "Notificações de áudio",
+    "description": "Rótulo do botão de notificações de áudio"
+  },
+  "ariaToggleMute": {
+    "message": "Silenciar anúncios: $1",
+    "description": "Rótulo ARIA do botão de silenciar anúncios com estado"
+  },
+  "ariaToggleNotify": {
+    "message": "Notificações de áudio: $1",
+    "description": "Rótulo ARIA do botão de notificações de áudio com estado"
+  },
+  "stateOn": {
+    "message": "Ativado",
+    "description": "Estado ligado"
+  },
+  "stateOff": {
+    "message": "Desativado",
+    "description": "Estado desligado"
+  },
+  "statsLast14Days": {
+    "message": "$1 nos últimos 14 dias",
+    "description": "Subtítulo com contagem dos últimos 14 dias"
+  },
+  "statsAverage": {
+    "message": "$1 em média",
+    "description": "Subtítulo com média de tempo silenciado"
+  }
+}

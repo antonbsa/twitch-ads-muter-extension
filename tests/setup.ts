@@ -1,5 +1,7 @@
 /// <reference types="vitest/globals" />
 import { vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 type Listener = (...args: unknown[]) => void
 
@@ -14,6 +16,10 @@ type ChromeMock = {
   runtime: {
     onMessage: { addListener: (fn: Listener) => void }
     getURL: (path: string) => string
+  }
+  i18n: {
+    getMessage: (name: string, substitutions?: string | string[]) => string
+    getUILanguage: () => string
   }
   storage: {
     local: {
@@ -38,6 +44,23 @@ const storageListeners: Listener[] = []
 
 const storageData: Record<string, unknown> = {}
 
+const localeMessages = {
+  en: JSON.parse(
+    readFileSync(join(process.cwd(), '_locales/en/messages.json'), 'utf8'),
+  ) as Record<string, { message: string }>,
+  pt_BR: JSON.parse(
+    readFileSync(join(process.cwd(), '_locales/pt_BR/messages.json'), 'utf8'),
+  ) as Record<string, { message: string }>,
+}
+
+let currentUiLanguage = 'en-US'
+
+function resolveLocaleFromUiLanguage(uiLanguage: string): 'en' | 'pt_BR' {
+  const normalized = uiLanguage.replace('-', '_').toLowerCase()
+  if (normalized.startsWith('pt')) return 'pt_BR'
+  return 'en'
+}
+
 const chromeMock: ChromeMock = {
   tabs: {
     sendMessage: vi.fn(),
@@ -50,6 +73,21 @@ const chromeMock: ChromeMock = {
       },
     },
     getURL: (path: string) => path,
+  },
+  i18n: {
+    getMessage: (name: string, substitutions?: string | string[]) => {
+      const locale = resolveLocaleFromUiLanguage(currentUiLanguage)
+      const message = localeMessages[locale][name]?.message ?? ''
+      if (!substitutions) return message
+      const values = Array.isArray(substitutions)
+        ? substitutions
+        : [substitutions]
+      return message.replace(/\$(\d+)/g, (_, index) => {
+        const value = values[Number(index) - 1]
+        return value ?? ''
+      })
+    },
+    getUILanguage: () => currentUiLanguage,
   },
   storage: {
     local: {
@@ -84,13 +122,37 @@ const chromeMock: ChromeMock = {
       runtimeListeners: Listener[]
       storageListeners: Listener[]
       storageData: Record<string, unknown>
+      setUiLanguage: (language: string) => void
     }
   }
 ).__test = {
   runtimeListeners,
   storageListeners,
   storageData,
+  setUiLanguage: (language: string) => {
+    currentUiLanguage = language
+  },
 }
+
+globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+  const url = typeof input === 'string' ? input : input.toString()
+  if (url.includes('_locales/pt_BR/messages.json')) {
+    return {
+      ok: true,
+      json: async () => localeMessages.pt_BR,
+    } as Response
+  }
+  if (url.includes('_locales/en/messages.json')) {
+    return {
+      ok: true,
+      json: async () => localeMessages.en,
+    } as Response
+  }
+  return {
+    ok: false,
+    json: async () => ({}),
+  } as Response
+})
 
 globalThis.Audio = class {
   volume = 1
