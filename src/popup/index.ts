@@ -55,6 +55,11 @@ function initI18n(): void {
   })
 }
 
+async function logI18nLocale(): Promise<void> {
+  const locale = chrome.i18n.getUILanguage()
+  await logToActiveTab('i18n UI locale', { locale })
+}
+
 function setTextWithLoading(el: HTMLElement, message: string): void {
   if (message.endsWith('...')) {
     el.textContent = message.slice(0, -3)
@@ -316,6 +321,7 @@ setAudioToggleDisabled(!muteAdsEnabled)
 notifyToggleEl.dataset.animate = 'false'
 
 initI18n()
+logI18nLocale()
 
 async function loadNotificationPreference(): Promise<void> {
   try {
