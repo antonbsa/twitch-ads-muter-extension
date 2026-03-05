@@ -23,14 +23,14 @@ const mutedTodayEl = mustGetElement<HTMLParagraphElement>('mutedToday')
 const mutedTotalEl = mustGetElement<HTMLParagraphElement>('mutedTotal')
 const mutedTimeEl = mustGetElement<HTMLParagraphElement>('mutedTime')
 const mutedTodayValueEl =
-  mutedTodayEl.querySelector<HTMLSpanElement>('span') ??
+  mutedTodayEl.querySelector<HTMLSpanElement>('.stat-value') ??
   mustGetElement<HTMLSpanElement>('mutedTodayValue')
 const mutedTotalValueEl =
-  mutedTotalEl.querySelector<HTMLSpanElement>('span') ??
+  mutedTotalEl.querySelector<HTMLSpanElement>('.stat-value') ??
   mustGetElement<HTMLSpanElement>('mutedTotalValue')
 const mutedTotalSubEl = mustGetElement<HTMLSpanElement>('mutedTotalSub')
 const mutedTimeValueEl =
-  mutedTimeEl.querySelector<HTMLSpanElement>('span') ??
+  mutedTimeEl.querySelector<HTMLSpanElement>('.stat-value') ??
   mustGetElement<HTMLSpanElement>('mutedTimeValue')
 const mutedTimeSubEl = mustGetElement<HTMLSpanElement>('mutedTimeSub')
 const loadingClass = 'loading-dots'
@@ -38,6 +38,22 @@ const loadingClass = 'loading-dots'
 let cachedStats: AdMuteStats | undefined
 let cachedStatsSerialized: string | null = null
 let currentChannel: string | null = null
+
+function t(key: string, substitutions?: string | string[]): string {
+  const message = chrome.i18n.getMessage(key, substitutions)
+  return message || key
+}
+
+function initI18n(): void {
+  document.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
+    const key = el.dataset.i18n
+    if (!key) return
+    const message = t(key)
+    if (message) {
+      el.textContent = message
+    }
+  })
+}
 
 function setTextWithLoading(el: HTMLElement, message: string): void {
   if (message.endsWith('...')) {
@@ -63,16 +79,15 @@ function renderChannel(data: LiveData | null): void {
 function updateToggleUI(enabled: boolean): void {
   notifyToggleEl.dataset.state = enabled ? 'on' : 'off'
   notifyToggleEl.setAttribute('aria-pressed', enabled ? 'true' : 'false')
-  notifyToggleEl.setAttribute(
-    'aria-label',
-    `Audio notifications: ${enabled ? 'On' : 'Off'}`,
-  )
+  const stateLabel = t(enabled ? 'stateOn' : 'stateOff')
+  notifyToggleEl.setAttribute('aria-label', t('ariaToggleNotify', [stateLabel]))
 }
 
 function updateMuteToggleUI(enabled: boolean): void {
   muteToggleEl.dataset.state = enabled ? 'on' : 'off'
   muteToggleEl.setAttribute('aria-pressed', enabled ? 'true' : 'false')
-  muteToggleEl.setAttribute('aria-label', `Mute ads: ${enabled ? 'On' : 'Off'}`)
+  const stateLabel = t(enabled ? 'stateOn' : 'stateOff')
+  muteToggleEl.setAttribute('aria-label', t('ariaToggleMute', [stateLabel]))
 }
 
 function setAudioToggleDisabled(disabled: boolean): void {
@@ -166,9 +181,11 @@ function updateMuteStatsFromStats(
   mutedTotalValueEl.textContent = String(totalCount)
   mutedTimeValueEl.textContent =
     totalMutedMs > 0 ? formatDuration(totalMutedMs) : '0'
-  mutedTotalSubEl.textContent = `${last14DaysCount} in the last 14 days`
+  mutedTotalSubEl.textContent = t('statsLast14Days', [String(last14DaysCount)])
   mutedTotalSubEl.classList.toggle('is-hidden', last14DaysCount === 0)
-  mutedTimeSubEl.textContent = `${formatDuration(averageMutedMs)} avg`
+  mutedTimeSubEl.textContent = t('statsAverage', [
+    formatDuration(averageMutedMs),
+  ])
   mutedTimeSubEl.classList.toggle('is-hidden', averageMutedMs === 0)
 }
 
@@ -232,13 +249,13 @@ async function initStatsForActiveTab(): Promise<void> {
 }
 
 async function fetchCurrentChannel(): Promise<void> {
-  setTextWithLoading(channelEl, 'Auto-checking current channel...')
+  setTextWithLoading(channelEl, t('channelAutoChecking'))
   setStatsUnavailable()
 
   const tab = await getActiveTab()
   if (!tab || !tab.id) {
     logToActiveTab('fetchCurrentChannel: no active tab or tab id', tab, 'warn')
-    setTextWithLoading(channelEl, 'No active tab found.')
+    setTextWithLoading(channelEl, t('channelNoActiveTab'))
     setStatsUnavailable()
     return
   }
@@ -261,7 +278,7 @@ async function fetchCurrentChannel(): Promise<void> {
     logToActiveTab('fetchCurrentChannel: getData response', response)
 
     if (!response || response.ok !== true) {
-      setTextWithLoading(channelEl, 'Could not read Twitch data.')
+      setTextWithLoading(channelEl, t('channelCannotRead'))
       if (!urlChannel) {
         setStatsUnavailable()
       }
@@ -284,7 +301,7 @@ async function fetchCurrentChannel(): Promise<void> {
     }
   } catch (error) {
     logToActiveTab('fetchCurrentChannel: getData error', error, 'warn')
-    setTextWithLoading(channelEl, 'Content script not available on this page.')
+    setTextWithLoading(channelEl, t('channelContentUnavailable'))
     if (!urlChannel) {
       setStatsUnavailable()
     }
@@ -297,6 +314,8 @@ updateToggleUI(notificationsEnabled)
 updateMuteToggleUI(muteAdsEnabled)
 setAudioToggleDisabled(!muteAdsEnabled)
 notifyToggleEl.dataset.animate = 'false'
+
+initI18n()
 
 async function loadNotificationPreference(): Promise<void> {
   try {

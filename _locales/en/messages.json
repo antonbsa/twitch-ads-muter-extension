@@ -1,0 +1,82 @@
+{
+  "extensionName": {
+    "message": "Twitch Channel ads muter",
+    "description": "Extension name shown in Chrome"
+  },
+  "extensionDescription": {
+    "message": "Logs Twitch channel info from live pages.",
+    "description": "Extension description shown in Chrome"
+  },
+  "actionTitle": {
+    "message": "Twitch ads muter",
+    "description": "Tooltip title for the browser action"
+  },
+  "popupTitle": {
+    "message": "Twitch Ads muter",
+    "description": "Popup document title"
+  },
+  "popupHeading": {
+    "message": "Twitch Ads muter",
+    "description": "Popup main heading"
+  },
+  "channelAutoChecking": {
+    "message": "Auto-checking current channel...",
+    "description": "Popup status while loading current channel"
+  },
+  "channelNoActiveTab": {
+    "message": "No active tab found.",
+    "description": "Popup error when there is no active tab"
+  },
+  "channelCannotRead": {
+    "message": "Could not read Twitch data.",
+    "description": "Popup error when data cannot be read"
+  },
+  "channelContentUnavailable": {
+    "message": "Content script not available on this page.",
+    "description": "Popup error when content script is missing"
+  },
+  "mutedTodayLabel": {
+    "message": "Ads muted today:",
+    "description": "Stat label for ads muted today"
+  },
+  "mutedTotalLabel": {
+    "message": "Total ads muted:",
+    "description": "Stat label for total ads muted"
+  },
+  "mutedTimeLabel": {
+    "message": "Total muted time:",
+    "description": "Stat label for total muted time"
+  },
+  "toggleMuteLabel": {
+    "message": "Mute ads",
+    "description": "Label for the mute ads toggle"
+  },
+  "toggleNotifyLabel": {
+    "message": "Audio notifications",
+    "description": "Label for the audio notifications toggle"
+  },
+  "ariaToggleMute": {
+    "message": "Mute ads: $1",
+    "description": "ARIA label for mute ads toggle with state"
+  },
+  "ariaToggleNotify": {
+    "message": "Audio notifications: $1",
+    "description": "ARIA label for audio notifications toggle with state"
+  },
+  "stateOn": {
+    "message": "On",
+    "description": "Generic on state"
+  },
+  "stateOff": {
+    "message": "Off",
+    "description": "Generic off state"
+  },
+  "statsLast14Days": {
+    "message": "$1 in the last 14 days",
+    "description": "Stat subtitle showing count in the last 14 days"
+  },
+  "statsAverage": {
+    "message": "$1 avg",
+    "description": "Stat subtitle showing average muted time"
+  }
+}
