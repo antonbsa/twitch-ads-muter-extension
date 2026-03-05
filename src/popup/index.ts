@@ -8,9 +8,11 @@ import {
   AUDIO_NOTIFICATION_KEY,
   AD_MUTE_ENABLED_KEY,
   AD_MUTE_STATS_KEY,
+  LANG_KEY,
 } from '../types'
 import { requestLiveData, sendPopupLog } from '../shared/messages'
 import { logger } from '../utils/logger'
+import { createLocaleController } from '../content/locale'
 
 function mustGetElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id)
@@ -23,6 +25,9 @@ function mustGetElement<T extends HTMLElement>(id: string): T {
 const channelEl = mustGetElement<HTMLElement>('channel')
 const muteToggleEl = mustGetElement<HTMLButtonElement>('muteToggle')
 const notifyToggleEl = mustGetElement<HTMLButtonElement>('notifyToggle')
+const settingsButtonEl = mustGetElement<HTMLButtonElement>('settingsButton')
+const settingsMenuEl = mustGetElement<HTMLDivElement>('settingsMenu')
+const languageToggleEl = mustGetElement<HTMLButtonElement>('languageToggle')
 const mutedTodayEl = mustGetElement<HTMLParagraphElement>('mutedToday')
 const mutedTotalEl = mustGetElement<HTMLParagraphElement>('mutedTotal')
 const mutedTimeEl = mustGetElement<HTMLParagraphElement>('mutedTime')
@@ -42,21 +47,38 @@ const loadingClass = 'loading-dots'
 let cachedStats: AdMuteStats | undefined
 let cachedStatsSerialized: string | null = null
 let currentChannel: string | null = null
+let channelStatusKey: string | null = null
+const localeController = createLocaleController(LANG_KEY)
+const { t, initI18n } = localeController
 
-function t(key: string, substitutions?: string | string[]): string {
-  const message = chrome.i18n.getMessage(key, substitutions)
-  return message || key
+function updateLanguageToggleLabel(): void {
+  const displayName = localeController.getLocaleDisplayName()
+  const label = t('menuLanguageLabel', [displayName])
+  languageToggleEl.textContent = label
+  languageToggleEl.setAttribute('aria-label', label)
 }
 
-function initI18n(): void {
-  document.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
-    const key = el.dataset.i18n
-    if (!key) return
-    const message = t(key)
-    if (message) {
-      el.textContent = message
-    }
-  })
+function applyLocale(): void {
+  initI18n()
+  updateToggleUI(notificationsEnabled)
+  updateMuteToggleUI(muteAdsEnabled)
+  updateLanguageToggleLabel()
+  if (channelStatusKey) {
+    setTextWithLoading(channelEl, t(channelStatusKey))
+  }
+  if (currentChannel) {
+    updateMuteStatsFromStats(currentChannel, cachedStats)
+  }
+}
+
+async function setLocale(locale: string, persist: boolean): Promise<void> {
+  await localeController.setLocale(locale, persist)
+  applyLocale()
+}
+
+async function loadLocalePreference(): Promise<void> {
+  await localeController.loadLocalePreference()
+  applyLocale()
 }
 
 async function logI18nLocale(): Promise<void> {
@@ -74,6 +96,11 @@ function setTextWithLoading(el: HTMLElement, message: string): void {
   el.classList.remove(loadingClass)
 }
 
+function setChannelStatus(key: string): void {
+  channelStatusKey = key
+  setTextWithLoading(channelEl, t(key))
+}
+
 async function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
   return tab
@@ -81,6 +108,7 @@ async function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
 
 function renderChannel(data: LiveData | null): void {
   if (data?.channel) {
+    channelStatusKey = null
     setTextWithLoading(channelEl, data.channel)
   }
 }
@@ -102,6 +130,14 @@ function updateMuteToggleUI(enabled: boolean): void {
 function setAudioToggleDisabled(disabled: boolean): void {
   notifyToggleEl.classList.toggle('is-disabled', disabled)
   notifyToggleEl.setAttribute('aria-disabled', disabled ? 'true' : 'false')
+}
+
+let settingsMenuOpen = false
+
+function setSettingsMenuOpen(open: boolean): void {
+  settingsMenuOpen = open
+  settingsMenuEl.classList.toggle('is-hidden', !open)
+  settingsButtonEl.setAttribute('aria-expanded', open ? 'true' : 'false')
 }
 
 function setStatsUnavailable(): void {
@@ -258,13 +294,13 @@ async function initStatsForActiveTab(): Promise<void> {
 }
 
 async function fetchCurrentChannel(): Promise<void> {
-  setTextWithLoading(channelEl, t('channelAutoChecking'))
+  setChannelStatus('channelAutoChecking')
   setStatsUnavailable()
 
   const tab = await getActiveTab()
   if (!tab || !tab.id) {
     logToActiveTab('fetchCurrentChannel: no active tab or tab id', tab, 'warn')
-    setTextWithLoading(channelEl, t('channelNoActiveTab'))
+    setChannelStatus('channelNoActiveTab')
     setStatsUnavailable()
     return
   }
@@ -287,7 +323,7 @@ async function fetchCurrentChannel(): Promise<void> {
     logToActiveTab('fetchCurrentChannel: getData response', response)
 
     if (!response || response.ok !== true) {
-      setTextWithLoading(channelEl, t('channelCannotRead'))
+      setChannelStatus('channelCannotRead')
       if (!urlChannel) {
         setStatsUnavailable()
       }
@@ -310,7 +346,7 @@ async function fetchCurrentChannel(): Promise<void> {
     }
   } catch (error) {
     logToActiveTab('fetchCurrentChannel: getData error', error, 'warn')
-    setTextWithLoading(channelEl, t('channelContentUnavailable'))
+    setChannelStatus('channelContentUnavailable')
     if (!urlChannel) {
       setStatsUnavailable()
     }
@@ -323,9 +359,6 @@ updateToggleUI(notificationsEnabled)
 updateMuteToggleUI(muteAdsEnabled)
 setAudioToggleDisabled(!muteAdsEnabled)
 notifyToggleEl.dataset.animate = 'false'
-
-initI18n()
-logI18nLocale()
 
 async function loadNotificationPreference(): Promise<void> {
   try {
@@ -377,8 +410,41 @@ notifyToggleEl.addEventListener('click', () => {
   }, 200)
 })
 
-loadNotificationPreference()
-loadMutePreference()
-logger.log('Popup opened')
-initStatsForActiveTab()
-fetchCurrentChannel()
+settingsButtonEl.addEventListener('click', (event) => {
+  event.stopPropagation()
+  setSettingsMenuOpen(!settingsMenuOpen)
+})
+
+languageToggleEl.addEventListener('click', async (event) => {
+  event.stopPropagation()
+  const nextLocale = localeController.getNextLocale()
+  await setLocale(nextLocale, true)
+})
+
+document.addEventListener('click', (event) => {
+  if (!settingsMenuOpen) return
+  const target = event.target as Node
+  if (settingsMenuEl.contains(target) || settingsButtonEl.contains(target)) {
+    return
+  }
+  setSettingsMenuOpen(false)
+})
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    setSettingsMenuOpen(false)
+  }
+})
+
+async function initPopup(): Promise<void> {
+  await loadLocalePreference()
+  setChannelStatus('channelAutoChecking')
+  await loadNotificationPreference()
+  await loadMutePreference()
+  logger.log('Popup opened')
+  initStatsForActiveTab()
+  fetchCurrentChannel()
+  logI18nLocale()
+}
+
+initPopup()

@@ -8,10 +8,21 @@
   </head>
   <body>
     <main>
+      <button
+        id="settingsButton"
+        class="settings-button"
+        type="button"
+        aria-haspopup="true"
+        aria-expanded="false"
+        data-i18n="settingsButtonLabel"
+        data-i18n-attr="aria-label,title"
+      >
+      </button>
+      <div id="settingsMenu" class="settings-menu is-hidden" role="menu">
+        <button id="languageToggle" class="settings-item" type="button"></button>
+      </div>
       <h1 data-i18n="popupHeading">Twitch Ads muter</h1>
-      <p id="channel" class="hint" data-i18n="channelAutoChecking">
-        Auto-checking current channel...
-      </p>
+      <p id="channel" class="hint">Auto-checking current channel...</p>
       <section class="ad-stats" aria-live="polite">
         <p id="mutedToday" class="stat">
           <span data-i18n="mutedTodayLabel">Ads muted today:</span>

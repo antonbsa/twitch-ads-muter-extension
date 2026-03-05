@@ -19,6 +19,22 @@
     "message": "Twitch Ads muter",
     "description": "Popup main heading"
   },
+  "settingsButtonLabel": {
+    "message": "Settings",
+    "description": "Label for the settings button"
+  },
+  "menuLanguageLabel": {
+    "message": "Language: $1",
+    "description": "Menu item label for language selection"
+  },
+  "languageNameEn": {
+    "message": "English",
+    "description": "Language name for English"
+  },
+  "languageNamePtBR": {
+    "message": "Portuguese (Brazil)",
+    "description": "Language name for Brazilian Portuguese"
+  },
   "channelAutoChecking": {
     "message": "Auto-checking current channel...",
     "description": "Popup status while loading current channel"

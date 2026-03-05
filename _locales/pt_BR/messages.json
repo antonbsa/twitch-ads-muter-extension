@@ -19,6 +19,22 @@
     "message": "Silenciador de anúncios da Twitch",
     "description": "Cabeçalho principal do popup"
   },
+  "settingsButtonLabel": {
+    "message": "Configurações",
+    "description": "Rótulo do botão de configurações"
+  },
+  "menuLanguageLabel": {
+    "message": "Idioma: $1",
+    "description": "Rótulo do item de menu para idioma"
+  },
+  "languageNameEn": {
+    "message": "Inglês",
+    "description": "Nome do idioma inglês"
+  },
+  "languageNamePtBR": {
+    "message": "Português (Brasil)",
+    "description": "Nome do idioma português brasileiro"
+  },
   "channelAutoChecking": {
     "message": "Verificando automaticamente o canal atual...",
     "description": "Status do popup enquanto carrega o canal atual"
