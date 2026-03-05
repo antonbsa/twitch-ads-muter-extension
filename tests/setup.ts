@@ -44,9 +44,22 @@ const storageListeners: Listener[] = []
 
 const storageData: Record<string, unknown> = {}
 
-const localeMessages = JSON.parse(
-  readFileSync(join(process.cwd(), '_locales/en/messages.json'), 'utf8'),
-) as Record<string, { message: string }>
+const localeMessages = {
+  en: JSON.parse(
+    readFileSync(join(process.cwd(), '_locales/en/messages.json'), 'utf8'),
+  ) as Record<string, { message: string }>,
+  pt_BR: JSON.parse(
+    readFileSync(join(process.cwd(), '_locales/pt_BR/messages.json'), 'utf8'),
+  ) as Record<string, { message: string }>,
+}
+
+let currentUiLanguage = 'en-US'
+
+function resolveLocaleFromUiLanguage(uiLanguage: string): 'en' | 'pt_BR' {
+  const normalized = uiLanguage.replace('-', '_').toLowerCase()
+  if (normalized.startsWith('pt')) return 'pt_BR'
+  return 'en'
+}
 
 const chromeMock: ChromeMock = {
   tabs: {
@@ -63,7 +76,8 @@ const chromeMock: ChromeMock = {
   },
   i18n: {
     getMessage: (name: string, substitutions?: string | string[]) => {
-      const message = localeMessages[name]?.message ?? ''
+      const locale = resolveLocaleFromUiLanguage(currentUiLanguage)
+      const message = localeMessages[locale][name]?.message ?? ''
       if (!substitutions) return message
       const values = Array.isArray(substitutions)
         ? substitutions
@@ -73,7 +87,7 @@ const chromeMock: ChromeMock = {
         return value ?? ''
       })
     },
-    getUILanguage: () => 'en-US',
+    getUILanguage: () => currentUiLanguage,
   },
   storage: {
     local: {
@@ -108,13 +122,37 @@ const chromeMock: ChromeMock = {
       runtimeListeners: Listener[]
       storageListeners: Listener[]
       storageData: Record<string, unknown>
+      setUiLanguage: (language: string) => void
     }
   }
 ).__test = {
   runtimeListeners,
   storageListeners,
   storageData,
+  setUiLanguage: (language: string) => {
+    currentUiLanguage = language
+  },
 }
+
+globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+  const url = typeof input === 'string' ? input : input.toString()
+  if (url.includes('_locales/pt_BR/messages.json')) {
+    return {
+      ok: true,
+      json: async () => localeMessages.pt_BR,
+    } as Response
+  }
+  if (url.includes('_locales/en/messages.json')) {
+    return {
+      ok: true,
+      json: async () => localeMessages.en,
+    } as Response
+  }
+  return {
+    ok: false,
+    json: async () => ({}),
+  } as Response
+})
 
 globalThis.Audio = class {
   volume = 1
