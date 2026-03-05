@@ -15,6 +15,10 @@ type LocaleController = {
 
 const localeCache = new Map<SupportedLocale, LocaleMessages>()
 
+function getChromeApi(): typeof chrome | undefined {
+  return typeof chrome === 'undefined' ? undefined : chrome
+}
+
 function normalizeLocale(value: string | null | undefined): SupportedLocale {
   if (!value) return 'en'
   const normalized = value.replace('-', '_')
@@ -33,7 +37,9 @@ async function loadLocaleMessages(
   const cached = localeCache.get(locale)
   if (cached) return cached
   try {
-    const url = chrome.runtime.getURL(`_locales/${locale}/messages.json`)
+    const chromeApi = getChromeApi()
+    const url = chromeApi?.runtime?.getURL(`_locales/${locale}/messages.json`)
+    if (!url) throw new Error('Missing chrome.runtime')
     const response = await fetch(url)
     if (!response.ok) throw new Error(`Failed to load locale ${locale}`)
     const json = (await response.json()) as LocaleMessages
@@ -66,7 +72,8 @@ export function createLocaleController(storageKey: string): LocaleController {
     if (currentMessages?.[key]?.message) {
       return formatMessage(currentMessages[key].message, substitutions)
     }
-    const message = chrome.i18n.getMessage(key, substitutions)
+    const chromeApi = getChromeApi()
+    const message = chromeApi?.i18n?.getMessage(key, substitutions)
     return message || key
   }
 
@@ -108,23 +115,28 @@ export function createLocaleController(storageKey: string): LocaleController {
     currentLocale = normalized
     currentMessages = await loadLocaleMessages(normalized)
     if (persist) {
-      chrome.storage.local.set({ [storageKey]: normalized })
+      const chromeApi = getChromeApi()
+      chromeApi?.storage?.local?.set({ [storageKey]: normalized })
     }
   }
 
   async function loadLocalePreference(): Promise<void> {
-    try {
-      const stored = await chrome.storage.local.get(storageKey)
-      const value = stored[storageKey]
-      if (typeof value === 'string') {
-        await setLocale(value, false)
-        return
+    const chromeApi = getChromeApi()
+    if (chromeApi?.storage?.local?.get) {
+      try {
+        const stored = await chromeApi.storage.local.get(storageKey)
+        const value = stored[storageKey]
+        if (typeof value === 'string') {
+          await setLocale(value, false)
+          return
+        }
+      } catch {
+        // Ignore storage errors; fall back to UI language.
       }
-    } catch {
-      // Ignore storage errors; fall back to UI language.
     }
 
-    await setLocale(chrome.i18n.getUILanguage(), false)
+    const uiLocale = chromeApi?.i18n?.getUILanguage?.()
+    await setLocale(uiLocale || 'en', false)
   }
 
   function getCurrentLocale(): SupportedLocale {

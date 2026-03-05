@@ -44,9 +44,9 @@ it('should render default stats placeholders and toggles', () => {
   expect(muteToggle).not.toBeNull()
   expect(notifyToggle).not.toBeNull()
 
-  const mutedTodayValue = mutedToday?.querySelector('span')?.textContent
-  const mutedTotalValue = mutedTotal?.querySelector('span')?.textContent
-  const mutedTimeValue = mutedTime?.querySelector('span')?.textContent
+  const mutedTodayValue = mutedToday?.querySelector('.stat-value')?.textContent
+  const mutedTotalValue = mutedTotal?.querySelector('.stat-value')?.textContent
+  const mutedTimeValue = mutedTime?.querySelector('.stat-value')?.textContent
   const mutedTotalSub = document.getElementById('mutedTotalSub')
   const mutedTimeSub = document.getElementById('mutedTimeSub')
   expect(mutedTodayValue).toBe('-')
@@ -97,9 +97,15 @@ it('should render stats from storage when channel data exists', async () => {
   await flushAsync()
   await flushAsync()
 
-  const mutedToday = document.querySelector('#mutedToday span')?.textContent
-  const mutedTotal = document.querySelector('#mutedTotal span')?.textContent
-  const mutedTime = document.querySelector('#mutedTime span')?.textContent
+  const mutedToday = document.querySelector(
+    '#mutedToday .stat-value',
+  )?.textContent
+  const mutedTotal = document.querySelector(
+    '#mutedTotal .stat-value',
+  )?.textContent
+  const mutedTime = document.querySelector(
+    '#mutedTime .stat-value',
+  )?.textContent
   const mutedTotalSub = document.getElementById('mutedTotalSub')
   const mutedTimeSub = document.getElementById('mutedTimeSub')
 
@@ -143,9 +149,15 @@ it('should set stats to 0 when channel has no stored data', async () => {
   await flushAsync()
   await flushAsync()
 
-  const mutedToday = document.querySelector('#mutedToday span')?.textContent
-  const mutedTotal = document.querySelector('#mutedTotal span')?.textContent
-  const mutedTime = document.querySelector('#mutedTime span')?.textContent
+  const mutedToday = document.querySelector(
+    '#mutedToday .stat-value',
+  )?.textContent
+  const mutedTotal = document.querySelector(
+    '#mutedTotal .stat-value',
+  )?.textContent
+  const mutedTime = document.querySelector(
+    '#mutedTime .stat-value',
+  )?.textContent
   const mutedTotalSub = document.getElementById('mutedTotalSub')
   const mutedTimeSub = document.getElementById('mutedTimeSub')
 

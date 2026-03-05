@@ -1,5 +1,7 @@
 /// <reference types="vitest/globals" />
 import { vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 type Listener = (...args: unknown[]) => void
 
@@ -14,6 +16,10 @@ type ChromeMock = {
   runtime: {
     onMessage: { addListener: (fn: Listener) => void }
     getURL: (path: string) => string
+  }
+  i18n: {
+    getMessage: (name: string, substitutions?: string | string[]) => string
+    getUILanguage: () => string
   }
   storage: {
     local: {
@@ -38,6 +44,10 @@ const storageListeners: Listener[] = []
 
 const storageData: Record<string, unknown> = {}
 
+const localeMessages = JSON.parse(
+  readFileSync(join(process.cwd(), '_locales/en/messages.json'), 'utf8'),
+) as Record<string, { message: string }>
+
 const chromeMock: ChromeMock = {
   tabs: {
     sendMessage: vi.fn(),
@@ -50,6 +60,20 @@ const chromeMock: ChromeMock = {
       },
     },
     getURL: (path: string) => path,
+  },
+  i18n: {
+    getMessage: (name: string, substitutions?: string | string[]) => {
+      const message = localeMessages[name]?.message ?? ''
+      if (!substitutions) return message
+      const values = Array.isArray(substitutions)
+        ? substitutions
+        : [substitutions]
+      return message.replace(/\$(\d+)/g, (_, index) => {
+        const value = values[Number(index) - 1]
+        return value ?? ''
+      })
+    },
+    getUILanguage: () => 'en-US',
   },
   storage: {
     local: {

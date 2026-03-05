@@ -82,6 +82,9 @@ async function loadLocalePreference(): Promise<void> {
 }
 
 async function logI18nLocale(): Promise<void> {
+  if (typeof chrome === 'undefined' || !chrome.i18n?.getUILanguage) {
+    return
+  }
   const locale = chrome.i18n.getUILanguage()
   await logToActiveTab('i18n UI locale', { locale })
 }
