@@ -38,6 +38,7 @@ const mutedTimeValueEl =
   mustGetElement<HTMLSpanElement>('mutedTimeValue')
 const mutedTimeSubEl = mustGetElement<HTMLSpanElement>('mutedTimeSub')
 const loadingClass = 'loading-dots'
+const RECENT_STATS_DAYS = 14
 
 let cachedStats: AdMuteStats | undefined
 let cachedStatsSerialized: string | null = null
@@ -222,9 +223,9 @@ function updateMuteStatsFromStats(
     todayMuteEntries.length > 0
       ? Math.round(todayMutedMs / todayMuteEntries.length)
       : 0
-  const last14DaysStart = Date.now() - 14 * 24 * 60 * 60 * 1000
-  const last14DaysCount = channelStats.log.filter(
-    (ts) => ts >= last14DaysStart,
+  const recentDaysStart = Date.now() - RECENT_STATS_DAYS * 24 * 60 * 60 * 1000
+  const recentDaysCount = channelStats.log.filter(
+    (ts) => ts >= recentDaysStart,
   ).length
   const totalCount = Math.max(0, Number(channelStats.allTimeCount ?? 0))
   const totalMutedMs = Math.max(0, Number(channelStats.allTimeMutedMs ?? 0))
@@ -245,8 +246,14 @@ function updateMuteStatsFromStats(
   mutedTotalValueEl.textContent = String(totalCount)
   mutedTimeValueEl.textContent =
     totalMutedMs > 0 ? formatDuration(totalMutedMs) : '0'
-  mutedTotalSubEl.textContent = t('statsLast14Days', [String(last14DaysCount)])
-  mutedTotalSubEl.classList.toggle('is-hidden', last14DaysCount === 0)
+  mutedTotalSubEl.textContent =
+    totalCount === recentDaysCount
+      ? t('statsLastDaysLabel', [String(RECENT_STATS_DAYS)])
+      : t('statsLastDaysCount', [
+          String(recentDaysCount),
+          String(RECENT_STATS_DAYS),
+        ])
+  mutedTotalSubEl.classList.toggle('is-hidden', recentDaysCount === 0)
   mutedTimeSubEl.textContent = t('statsAverage', [
     formatDuration(averageMutedMs),
   ])
