@@ -1,18 +1,12 @@
-import type {
-  LiveData,
-  GetDataResponse,
-  AdMuteStats,
-  PopupLogMessage,
-} from '../types'
+import type { AdMuteStats, PopupLogMessage } from '../types'
 import {
   AUDIO_NOTIFICATION_KEY,
   AD_MUTE_ENABLED_KEY,
   AD_MUTE_STATS_KEY,
   LANG_KEY,
 } from '../types'
-import { requestLiveData, sendPopupLog } from '../shared/messages'
-import { logger } from '../utils/logger'
 import { createLocaleController } from '../content/locale'
+import { sendPopupLog } from '../shared/messages'
 
 function mustGetElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id)
@@ -82,14 +76,6 @@ async function loadLocalePreference(): Promise<void> {
   applyLocale()
 }
 
-async function logI18nLocale(): Promise<void> {
-  if (typeof chrome === 'undefined' || !chrome.i18n?.getUILanguage) {
-    return
-  }
-  const locale = chrome.i18n.getUILanguage()
-  await logToActiveTab('i18n UI locale', { locale })
-}
-
 function setTextWithLoading(el: HTMLElement, message: string): void {
   if (message.endsWith('...')) {
     el.textContent = message.slice(0, -3)
@@ -110,11 +96,15 @@ async function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
   return tab
 }
 
-function renderChannel(data: LiveData | null): void {
-  if (data?.channel) {
-    channelStatusKey = null
-    setTextWithLoading(channelEl, data.channel)
-  }
+async function logToActiveTab(
+  message: string,
+  data?: unknown,
+  level: PopupLogMessage['level'] = 'log',
+): Promise<void> {
+  const tab = await getActiveTab()
+  if (!tab?.id) return
+
+  await sendPopupLog(tab.id, message, data, level)
 }
 
 function updateToggleUI(enabled: boolean): void {
@@ -263,17 +253,6 @@ function updateMuteStatsFromStats(
   mutedTimeSubEl.classList.toggle('is-hidden', averageMutedMs === 0)
 }
 
-async function logToActiveTab(
-  message: string,
-  data?: unknown,
-  level: PopupLogMessage['level'] = 'log',
-): Promise<void> {
-  const tab = await getActiveTab()
-  if (!tab?.id) return
-
-  await sendPopupLog(tab.id, message, data, level)
-}
-
 async function loadStatsFromStorage(): Promise<void> {
   if (!currentChannel) {
     setStatsUnavailable()
@@ -295,91 +274,29 @@ async function loadStatsFromStorage(): Promise<void> {
   }
 }
 
-async function initStatsForActiveTab(): Promise<void> {
+async function syncActiveChannel(): Promise<void> {
   const tab = await getActiveTab()
   if (!tab) {
-    logToActiveTab('initStatsForActiveTab: no active tab', undefined, 'warn')
-    setStatsUnavailable()
-    return
-  }
-
-  currentChannel = getChannelFromTabUrl(tab.url)
-  logToActiveTab('initStatsForActiveTab: active tab', {
-    url: tab.url,
-    channel: currentChannel,
-  })
-  if (!currentChannel) {
-    setStatsUnavailable()
-    return
-  }
-
-  if (cachedStats) {
-    updateMuteStatsFromStats(currentChannel, cachedStats)
-  } else {
-    setStatsUnavailable()
-  }
-
-  await loadStatsFromStorage()
-}
-
-async function fetchCurrentChannel(): Promise<void> {
-  setChannelStatus('channelAutoChecking')
-  setStatsUnavailable()
-
-  const tab = await getActiveTab()
-  if (!tab || !tab.id) {
-    logToActiveTab('fetchCurrentChannel: no active tab or tab id', tab, 'warn')
+    currentChannel = null
+    await logToActiveTab('syncActiveChannel: no active tab', undefined, 'warn')
     setChannelStatus('channelNoActiveTab')
     setStatsUnavailable()
     return
   }
 
-  const urlChannel = getChannelFromTabUrl(tab.url)
-  currentChannel = urlChannel
-  logToActiveTab('fetchCurrentChannel: active tab', {
+  currentChannel = getChannelFromTabUrl(tab.url)
+  await logToActiveTab('syncActiveChannel: active tab', {
     url: tab.url,
-    channel: urlChannel,
+    channel: currentChannel,
   })
-
-  try {
-    const response: GetDataResponse | undefined = await requestLiveData(
-      tab.id,
-      {
-        wait: true,
-      },
-    )
-
-    logToActiveTab('fetchCurrentChannel: getData response', response)
-
-    if (!response || response.ok !== true) {
-      setChannelStatus('channelCannotRead')
-      if (!urlChannel) {
-        setStatsUnavailable()
-      }
-      return
-    }
-
-    renderChannel(response.data)
-    if (response.data.channel) {
-      if (response.data.channel !== currentChannel) {
-        currentChannel = response.data.channel
-      }
-
-      if (cachedStats) {
-        updateMuteStatsFromStats(currentChannel, cachedStats)
-      } else {
-        setStatsUnavailable()
-      }
-
-      await loadStatsFromStorage()
-    }
-  } catch (error) {
-    logToActiveTab('fetchCurrentChannel: getData error', error, 'warn')
-    setChannelStatus('channelContentUnavailable')
-    if (!urlChannel) {
-      setStatsUnavailable()
-    }
+  if (!currentChannel) {
+    setChannelStatus('channelCannotRead')
+    setStatsUnavailable()
+    return
   }
+
+  channelStatusKey = null
+  setTextWithLoading(channelEl, currentChannel)
 }
 
 let notificationsEnabled = true
@@ -465,15 +382,20 @@ document.addEventListener('keydown', (event) => {
   }
 })
 
+async function refreshPopupState(): Promise<void> {
+  setChannelStatus('channelAutoChecking')
+  setStatsUnavailable()
+  await syncActiveChannel()
+  if (!currentChannel) return
+  await loadStatsFromStorage()
+}
+
 async function initPopup(): Promise<void> {
   await loadLocalePreference()
-  setChannelStatus('channelAutoChecking')
   await loadNotificationPreference()
   await loadMutePreference()
-  logger.log('Popup opened')
-  initStatsForActiveTab()
-  fetchCurrentChannel()
-  logI18nLocale()
+  await logToActiveTab('Popup opened')
+  await refreshPopupState()
 }
 
 initPopup()

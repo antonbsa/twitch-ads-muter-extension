@@ -1,7 +1,4 @@
 export const SELECTORS = {
-  // These selectors are best-effort guesses and may need updates.
-  viewers: 'strong[data-a-target="animated-channel-viewers-count"]',
-  liveTime: 'span.live-time span',
   adIndicator: '[aria-label="Ad"]',
   muteButton: 'button[data-a-target="player-mute-unmute-button"]',
   sliderVolume: 'input[id^="player-volume-slider"]',
@@ -28,11 +25,4 @@ export function getVolumeSliderValue(): number | null {
 
 export function isAdIndicatorVisible(): boolean {
   return Boolean(document.querySelector(SELECTORS.adIndicator))
-}
-
-export function hasLiveDataElements(): boolean {
-  return Boolean(
-    document.querySelector(SELECTORS.viewers) ||
-    document.querySelector(SELECTORS.liveTime),
-  )
 }
