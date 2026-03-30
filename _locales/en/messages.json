@@ -94,5 +94,9 @@
   "statsAverage": {
     "message": "$1 avg",
     "description": "Stat subtitle showing average muted time"
+  },
+  "statsTodayDurationAverage": {
+    "message": "$1 ($2 avg)",
+    "description": "Stat subtitle showing today's total muted time and average"
   }
 }

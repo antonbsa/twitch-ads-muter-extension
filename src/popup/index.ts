@@ -34,6 +34,7 @@ const mutedTimeEl = mustGetElement<HTMLParagraphElement>('mutedTime')
 const mutedTodayValueEl =
   mutedTodayEl.querySelector<HTMLSpanElement>('.stat-value') ??
   mustGetElement<HTMLSpanElement>('mutedTodayValue')
+const mutedTodaySubEl = mustGetElement<HTMLSpanElement>('mutedTodaySub')
 const mutedTotalValueEl =
   mutedTotalEl.querySelector<HTMLSpanElement>('.stat-value') ??
   mustGetElement<HTMLSpanElement>('mutedTotalValue')
@@ -147,8 +148,10 @@ function setStatsUnavailable(): void {
   mutedTodayValueEl.textContent = '-'
   mutedTotalValueEl.textContent = '-'
   mutedTimeValueEl.textContent = '-'
+  mutedTodaySubEl.textContent = ''
   mutedTotalSubEl.textContent = ''
   mutedTimeSubEl.textContent = ''
+  mutedTodaySubEl.classList.add('is-hidden')
   mutedTotalSubEl.classList.add('is-hidden')
   mutedTimeSubEl.classList.add('is-hidden')
 }
@@ -196,7 +199,7 @@ function updateMuteStatsFromStats(
     return
   }
 
-  if (!stats || stats.version !== 2 || !Array.isArray(stats.channels)) {
+  if (!stats || stats.version !== 3 || !Array.isArray(stats.channels)) {
     setStatsUnavailable()
     return
   }
@@ -207,8 +210,10 @@ function updateMuteStatsFromStats(
     mutedTodayValueEl.textContent = '0'
     mutedTotalValueEl.textContent = '0'
     mutedTimeValueEl.textContent = '0'
+    mutedTodaySubEl.textContent = ''
     mutedTotalSubEl.textContent = ''
     mutedTimeSubEl.textContent = ''
+    mutedTodaySubEl.classList.add('is-hidden')
     mutedTotalSubEl.classList.add('is-hidden')
     mutedTimeSubEl.classList.add('is-hidden')
     return
@@ -216,6 +221,17 @@ function updateMuteStatsFromStats(
 
   const todayStart = getStartOfToday()
   const todayCount = channelStats.log.filter((ts) => ts >= todayStart).length
+  const todayMuteEntries = (channelStats.muteLog ?? []).filter(
+    (entry) => entry.timestamp >= todayStart,
+  )
+  const todayMutedMs = todayMuteEntries.reduce(
+    (total, entry) => total + Math.max(0, Number(entry.durationMs ?? 0)),
+    0,
+  )
+  const todayAverageMutedMs =
+    todayMuteEntries.length > 0
+      ? Math.round(todayMutedMs / todayMuteEntries.length)
+      : 0
   const last14DaysStart = Date.now() - 14 * 24 * 60 * 60 * 1000
   const last14DaysCount = channelStats.log.filter(
     (ts) => ts >= last14DaysStart,
@@ -226,6 +242,11 @@ function updateMuteStatsFromStats(
     totalCount > 0 ? Math.round(totalMutedMs / totalCount) : 0
 
   mutedTodayValueEl.textContent = String(todayCount)
+  mutedTodaySubEl.textContent = t('statsTodayDurationAverage', [
+    formatDuration(todayMutedMs),
+    formatDuration(todayAverageMutedMs),
+  ])
+  mutedTodaySubEl.classList.toggle('is-hidden', todayMutedMs === 0)
   mutedTotalValueEl.textContent = String(totalCount)
   mutedTimeValueEl.textContent =
     totalMutedMs > 0 ? formatDuration(totalMutedMs) : '0'

@@ -94,5 +94,9 @@
   "statsAverage": {
     "message": "$1 em média",
     "description": "Subtítulo com média de tempo silenciado"
+  },
+  "statsTodayDurationAverage": {
+    "message": "$1 ($2 em média)",
+    "description": "Subtítulo com o tempo total silenciado de hoje e a média"
   }
 }
