@@ -199,7 +199,7 @@ function updateMuteStatsFromStats(
     return
   }
 
-  if (!stats || stats.version !== 3 || !Array.isArray(stats.channels)) {
+  if (!stats || !Array.isArray(stats.channels)) {
     setStatsUnavailable()
     return
   }
@@ -242,11 +242,16 @@ function updateMuteStatsFromStats(
     totalCount > 0 ? Math.round(totalMutedMs / totalCount) : 0
 
   mutedTodayValueEl.textContent = String(todayCount)
-  mutedTodaySubEl.textContent = t('statsTodayDurationAverage', [
-    formatDuration(todayMutedMs),
-    formatDuration(todayAverageMutedMs),
-  ])
-  mutedTodaySubEl.classList.toggle('is-hidden', todayMutedMs === 0)
+  if (todayMuteEntries.length > 0) {
+    mutedTodaySubEl.textContent = t('statsTodayDurationAverage', [
+      formatDuration(todayMutedMs),
+      formatDuration(todayAverageMutedMs),
+    ])
+    mutedTodaySubEl.classList.remove('is-hidden')
+  } else {
+    mutedTodaySubEl.textContent = ''
+    mutedTodaySubEl.classList.add('is-hidden')
+  }
   mutedTotalValueEl.textContent = String(totalCount)
   mutedTimeValueEl.textContent =
     totalMutedMs > 0 ? formatDuration(totalMutedMs) : '0'
