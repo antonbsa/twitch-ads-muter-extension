@@ -87,12 +87,20 @@
     "message": "Desativado",
     "description": "Estado desligado"
   },
-  "statsLast14Days": {
-    "message": "$1 nos últimos 14 dias",
-    "description": "Subtítulo com contagem dos últimos 14 dias"
+  "statsLastDaysCount": {
+    "message": "$1 nos últimos $2 dias",
+    "description": "Subtítulo com contagem na janela configurada de dias recentes"
+  },
+  "statsLastDaysLabel": {
+    "message": "nos últimos $1 dias",
+    "description": "Rótulo do subtítulo para a janela configurada de dias recentes"
   },
   "statsAverage": {
     "message": "$1 em média",
     "description": "Subtítulo com média de tempo silenciado"
+  },
+  "statsTodayDurationAverage": {
+    "message": "$1 ($2 em média)",
+    "description": "Subtítulo com o tempo total silenciado de hoje e a média"
   }
 }

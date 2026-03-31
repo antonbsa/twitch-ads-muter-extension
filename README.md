@@ -15,9 +15,17 @@ Ad blockers never worked fine for me (and I understand the importance of it for 
 ## Features
 
 - Mutes/unmutes during ads and can play audio notifications
-- Tracks ad-mute stats (today, total, total muted time + average)
+- Tracks ad-mute stats per channel in the popup:
+  today count, total count, total muted time, all-time average, and today's
+  total muted time with today's average when duration data is available
 - Stores preferences (mute ads, audio notifications) in `chrome.storage.local`
 - Popup UI auto-detects the active Twitch channel, shows stats, and provides toggles for ad muting and audio notifications
+
+## Configuration
+
+- `settings.defaults.json` contains the default runtime settings shipped with the extension.
+- `settings.json` is optional and can be added in the project root to override local settings during development.
+- Preferences changed in the popup, such as mute and audio-notification toggles, are stored in `chrome.storage.local`.
 
 ## How to use
 
@@ -34,4 +42,5 @@ Ad blockers never worked fine for me (and I understand the importance of it for 
 - Make changes in `src/`.
 - Run watch mode to rebuild on changes: `npm run dev` (optional: `--debounce=ms`).
 - If you are not using watch mode, run `npm run build` after changes.
+- If you need local runtime overrides, create or edit `settings.json` in the project root.
 - Reload the extension in `chrome://extensions` to pick up the latest build.

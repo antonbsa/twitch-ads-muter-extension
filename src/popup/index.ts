@@ -1,18 +1,12 @@
-import type {
-  LiveData,
-  GetDataResponse,
-  AdMuteStats,
-  PopupLogMessage,
-} from '../types'
+import type { AdMuteStats, PopupLogMessage } from '../types'
 import {
   AUDIO_NOTIFICATION_KEY,
   AD_MUTE_ENABLED_KEY,
   AD_MUTE_STATS_KEY,
   LANG_KEY,
 } from '../types'
-import { requestLiveData, sendPopupLog } from '../shared/messages'
-import { logger } from '../utils/logger'
 import { createLocaleController } from '../content/locale'
+import { sendPopupLog } from '../shared/messages'
 
 function mustGetElement<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id)
@@ -34,6 +28,7 @@ const mutedTimeEl = mustGetElement<HTMLParagraphElement>('mutedTime')
 const mutedTodayValueEl =
   mutedTodayEl.querySelector<HTMLSpanElement>('.stat-value') ??
   mustGetElement<HTMLSpanElement>('mutedTodayValue')
+const mutedTodaySubEl = mustGetElement<HTMLSpanElement>('mutedTodaySub')
 const mutedTotalValueEl =
   mutedTotalEl.querySelector<HTMLSpanElement>('.stat-value') ??
   mustGetElement<HTMLSpanElement>('mutedTotalValue')
@@ -43,9 +38,9 @@ const mutedTimeValueEl =
   mustGetElement<HTMLSpanElement>('mutedTimeValue')
 const mutedTimeSubEl = mustGetElement<HTMLSpanElement>('mutedTimeSub')
 const loadingClass = 'loading-dots'
+const RECENT_STATS_DAYS = 14
 
 let cachedStats: AdMuteStats | undefined
-let cachedStatsSerialized: string | null = null
 let currentChannel: string | null = null
 let channelStatusKey: string | null = null
 const localeController = createLocaleController(LANG_KEY)
@@ -81,14 +76,6 @@ async function loadLocalePreference(): Promise<void> {
   applyLocale()
 }
 
-async function logI18nLocale(): Promise<void> {
-  if (typeof chrome === 'undefined' || !chrome.i18n?.getUILanguage) {
-    return
-  }
-  const locale = chrome.i18n.getUILanguage()
-  await logToActiveTab('i18n UI locale', { locale })
-}
-
 function setTextWithLoading(el: HTMLElement, message: string): void {
   if (message.endsWith('...')) {
     el.textContent = message.slice(0, -3)
@@ -109,11 +96,15 @@ async function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
   return tab
 }
 
-function renderChannel(data: LiveData | null): void {
-  if (data?.channel) {
-    channelStatusKey = null
-    setTextWithLoading(channelEl, data.channel)
-  }
+async function logToActiveTab(
+  message: string,
+  data?: unknown,
+  level: PopupLogMessage['level'] = 'log',
+): Promise<void> {
+  const tab = await getActiveTab()
+  if (!tab?.id) return
+
+  await sendPopupLog(tab.id, message, data, level)
 }
 
 function updateToggleUI(enabled: boolean): void {
@@ -147,8 +138,10 @@ function setStatsUnavailable(): void {
   mutedTodayValueEl.textContent = '-'
   mutedTotalValueEl.textContent = '-'
   mutedTimeValueEl.textContent = '-'
+  mutedTodaySubEl.textContent = ''
   mutedTotalSubEl.textContent = ''
   mutedTimeSubEl.textContent = ''
+  mutedTodaySubEl.classList.add('is-hidden')
   mutedTotalSubEl.classList.add('is-hidden')
   mutedTimeSubEl.classList.add('is-hidden')
 }
@@ -196,19 +189,23 @@ function updateMuteStatsFromStats(
     return
   }
 
-  if (!stats || stats.version !== 2 || !Array.isArray(stats.channels)) {
+  if (stats && !Array.isArray(stats.channels)) {
     setStatsUnavailable()
     return
   }
 
   const key = channel.toLowerCase()
-  const channelStats = stats.channels.find((item) => item.channel === key)
+  const channelStats = (stats?.channels ?? []).find(
+    (item) => item.channel === key,
+  )
   if (!channelStats) {
     mutedTodayValueEl.textContent = '0'
     mutedTotalValueEl.textContent = '0'
     mutedTimeValueEl.textContent = '0'
+    mutedTodaySubEl.textContent = ''
     mutedTotalSubEl.textContent = ''
     mutedTimeSubEl.textContent = ''
+    mutedTodaySubEl.classList.add('is-hidden')
     mutedTotalSubEl.classList.add('is-hidden')
     mutedTimeSubEl.classList.add('is-hidden')
     return
@@ -216,9 +213,20 @@ function updateMuteStatsFromStats(
 
   const todayStart = getStartOfToday()
   const todayCount = channelStats.log.filter((ts) => ts >= todayStart).length
-  const last14DaysStart = Date.now() - 14 * 24 * 60 * 60 * 1000
-  const last14DaysCount = channelStats.log.filter(
-    (ts) => ts >= last14DaysStart,
+  const todayMuteEntries = (channelStats.muteLog ?? []).filter(
+    (entry) => entry.timestamp >= todayStart,
+  )
+  const todayMutedMs = todayMuteEntries.reduce(
+    (total, entry) => total + Math.max(0, Number(entry.durationMs ?? 0)),
+    0,
+  )
+  const todayAverageMutedMs =
+    todayMuteEntries.length > 0
+      ? Math.round(todayMutedMs / todayMuteEntries.length)
+      : 0
+  const recentDaysStart = Date.now() - RECENT_STATS_DAYS * 24 * 60 * 60 * 1000
+  const recentDaysCount = channelStats.log.filter(
+    (ts) => ts >= recentDaysStart,
   ).length
   const totalCount = Math.max(0, Number(channelStats.allTimeCount ?? 0))
   const totalMutedMs = Math.max(0, Number(channelStats.allTimeMutedMs ?? 0))
@@ -226,26 +234,31 @@ function updateMuteStatsFromStats(
     totalCount > 0 ? Math.round(totalMutedMs / totalCount) : 0
 
   mutedTodayValueEl.textContent = String(todayCount)
+  if (todayMuteEntries.length > 0) {
+    mutedTodaySubEl.textContent = t('statsTodayDurationAverage', [
+      formatDuration(todayMutedMs),
+      formatDuration(todayAverageMutedMs),
+    ])
+    mutedTodaySubEl.classList.remove('is-hidden')
+  } else {
+    mutedTodaySubEl.textContent = ''
+    mutedTodaySubEl.classList.add('is-hidden')
+  }
   mutedTotalValueEl.textContent = String(totalCount)
   mutedTimeValueEl.textContent =
     totalMutedMs > 0 ? formatDuration(totalMutedMs) : '0'
-  mutedTotalSubEl.textContent = t('statsLast14Days', [String(last14DaysCount)])
-  mutedTotalSubEl.classList.toggle('is-hidden', last14DaysCount === 0)
+  mutedTotalSubEl.textContent =
+    totalCount === recentDaysCount
+      ? t('statsLastDaysLabel', [String(RECENT_STATS_DAYS)])
+      : t('statsLastDaysCount', [
+          String(recentDaysCount),
+          String(RECENT_STATS_DAYS),
+        ])
+  mutedTotalSubEl.classList.toggle('is-hidden', recentDaysCount === 0)
   mutedTimeSubEl.textContent = t('statsAverage', [
     formatDuration(averageMutedMs),
   ])
   mutedTimeSubEl.classList.toggle('is-hidden', averageMutedMs === 0)
-}
-
-async function logToActiveTab(
-  message: string,
-  data?: unknown,
-  level: PopupLogMessage['level'] = 'log',
-): Promise<void> {
-  const tab = await getActiveTab()
-  if (!tab?.id) return
-
-  await sendPopupLog(tab.id, message, data, level)
 }
 
 async function loadStatsFromStorage(): Promise<void> {
@@ -257,103 +270,36 @@ async function loadStatsFromStorage(): Promise<void> {
   try {
     const stored = await chrome.storage.local.get(AD_MUTE_STATS_KEY)
     const stats = stored.adMuteStats as AdMuteStats | undefined
-    const serialized = stats ? JSON.stringify(stats) : null
-
-    if (serialized !== cachedStatsSerialized) {
-      cachedStatsSerialized = serialized
-      cachedStats = stats
-      updateMuteStatsFromStats(currentChannel, cachedStats)
-    }
+    cachedStats = stats
+    updateMuteStatsFromStats(currentChannel, cachedStats)
   } catch {
     setStatsUnavailable()
   }
 }
 
-async function initStatsForActiveTab(): Promise<void> {
+async function syncActiveChannel(): Promise<void> {
   const tab = await getActiveTab()
   if (!tab) {
-    logToActiveTab('initStatsForActiveTab: no active tab', undefined, 'warn')
-    setStatsUnavailable()
-    return
-  }
-
-  currentChannel = getChannelFromTabUrl(tab.url)
-  logToActiveTab('initStatsForActiveTab: active tab', {
-    url: tab.url,
-    channel: currentChannel,
-  })
-  if (!currentChannel) {
-    setStatsUnavailable()
-    return
-  }
-
-  if (cachedStats) {
-    updateMuteStatsFromStats(currentChannel, cachedStats)
-  } else {
-    setStatsUnavailable()
-  }
-
-  await loadStatsFromStorage()
-}
-
-async function fetchCurrentChannel(): Promise<void> {
-  setChannelStatus('channelAutoChecking')
-  setStatsUnavailable()
-
-  const tab = await getActiveTab()
-  if (!tab || !tab.id) {
-    logToActiveTab('fetchCurrentChannel: no active tab or tab id', tab, 'warn')
+    currentChannel = null
+    await logToActiveTab('syncActiveChannel: no active tab', undefined, 'warn')
     setChannelStatus('channelNoActiveTab')
     setStatsUnavailable()
     return
   }
 
-  const urlChannel = getChannelFromTabUrl(tab.url)
-  currentChannel = urlChannel
-  logToActiveTab('fetchCurrentChannel: active tab', {
+  currentChannel = getChannelFromTabUrl(tab.url)
+  await logToActiveTab('syncActiveChannel: active tab', {
     url: tab.url,
-    channel: urlChannel,
+    channel: currentChannel,
   })
-
-  try {
-    const response: GetDataResponse | undefined = await requestLiveData(
-      tab.id,
-      {
-        wait: true,
-      },
-    )
-
-    logToActiveTab('fetchCurrentChannel: getData response', response)
-
-    if (!response || response.ok !== true) {
-      setChannelStatus('channelCannotRead')
-      if (!urlChannel) {
-        setStatsUnavailable()
-      }
-      return
-    }
-
-    renderChannel(response.data)
-    if (response.data.channel) {
-      if (response.data.channel !== currentChannel) {
-        currentChannel = response.data.channel
-      }
-
-      if (cachedStats) {
-        updateMuteStatsFromStats(currentChannel, cachedStats)
-      } else {
-        setStatsUnavailable()
-      }
-
-      await loadStatsFromStorage()
-    }
-  } catch (error) {
-    logToActiveTab('fetchCurrentChannel: getData error', error, 'warn')
-    setChannelStatus('channelContentUnavailable')
-    if (!urlChannel) {
-      setStatsUnavailable()
-    }
+  if (!currentChannel) {
+    setChannelStatus('channelCannotRead')
+    setStatsUnavailable()
+    return
   }
+
+  channelStatusKey = null
+  setTextWithLoading(channelEl, currentChannel)
 }
 
 let notificationsEnabled = true
@@ -439,15 +385,20 @@ document.addEventListener('keydown', (event) => {
   }
 })
 
+async function refreshPopupState(): Promise<void> {
+  setChannelStatus('channelAutoChecking')
+  setStatsUnavailable()
+  await syncActiveChannel()
+  if (!currentChannel) return
+  await loadStatsFromStorage()
+}
+
 async function initPopup(): Promise<void> {
   await loadLocalePreference()
-  setChannelStatus('channelAutoChecking')
   await loadNotificationPreference()
   await loadMutePreference()
-  logger.log('Popup opened')
-  initStatsForActiveTab()
-  fetchCurrentChannel()
-  logI18nLocale()
+  await logToActiveTab('Popup opened')
+  await refreshPopupState()
 }
 
 initPopup()

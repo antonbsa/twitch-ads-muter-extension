@@ -126,6 +126,11 @@ h1 {
   color: var(--muted);
 }
 
+.stat-value {
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .stat-sub {
   display: block;
   font-size: 11px;

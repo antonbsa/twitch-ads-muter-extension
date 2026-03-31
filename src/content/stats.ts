@@ -26,6 +26,10 @@ export async function recordMutedAd(
     if (resolvedDurationMs !== null) {
       channelStats.allTimeMutedMs =
         (channelStats.allTimeMutedMs ?? 0) + resolvedDurationMs
+      channelStats.muteLog = [
+        ...(channelStats.muteLog ?? []),
+        { timestamp, durationMs: resolvedDurationMs },
+      ]
       stats.allTimeMutedMs = (stats.allTimeMutedMs ?? 0) + resolvedDurationMs
     }
 
@@ -44,7 +48,7 @@ export async function recordMutedAd(
 
 function createEmptyStats(): AdMuteStats {
   return {
-    version: 2,
+    version: 3,
     allTimeTotal: 0,
     allTimeMutedMs: 0,
     channels: [],
@@ -57,6 +61,7 @@ function createChannelStats(channel: string): AdMuteStats['channels'][number] {
     allTimeCount: 0,
     allTimeMutedMs: 0,
     log: [],
+    muteLog: [],
   }
 }
 
@@ -66,9 +71,13 @@ function normalizeMuteStats(value: unknown): AdMuteStats {
   }
 
   const candidate = value as Partial<AdMuteStats>
-  if (candidate.version === 2 && Array.isArray(candidate.channels)) {
+  if (
+    ((candidate.version as number) === 2 ||
+      (candidate.version as number) === 3) &&
+    Array.isArray(candidate.channels)
+  ) {
     return {
-      version: 2,
+      version: 3,
       allTimeTotal: Number(candidate.allTimeTotal ?? 0),
       allTimeMutedMs: Number(candidate.allTimeMutedMs ?? 0),
       channels: candidate.channels
@@ -79,6 +88,20 @@ function normalizeMuteStats(value: unknown): AdMuteStats {
           allTimeMutedMs: Number(item.allTimeMutedMs ?? 0),
           log: Array.isArray(item.log)
             ? item.log.filter((ts) => Number.isFinite(ts))
+            : [],
+          muteLog: Array.isArray(item.muteLog)
+            ? item.muteLog
+                .filter(
+                  (entry) =>
+                    entry &&
+                    Number.isFinite(entry.timestamp) &&
+                    Number.isFinite(entry.durationMs) &&
+                    Number(entry.durationMs) >= 0,
+                )
+                .map((entry) => ({
+                  timestamp: Number(entry.timestamp),
+                  durationMs: Number(entry.durationMs),
+                }))
             : [],
           lastMutedAt: Number.isFinite(item.lastMutedAt)
             ? Number(item.lastMutedAt)
@@ -105,6 +128,9 @@ function maybePruneStats(
 
   for (const channel of stats.channels) {
     channel.log = channel.log.filter((ts) => ts >= pruneBefore)
+    channel.muteLog = (channel.muteLog ?? []).filter(
+      (entry) => entry.timestamp >= pruneBefore,
+    )
   }
 
   return now

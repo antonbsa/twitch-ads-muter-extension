@@ -1,5 +1,4 @@
 import { startAdObserver } from './content/ads'
-import { collectLiveData, startLiveDataObserver } from './content/live-data'
 import { registerMessageHandlers } from './content/messages'
 import { setupPreferences } from './content/preferences'
 import { loadSettings } from './content/settings'
@@ -7,9 +6,7 @@ import { loadSettings } from './content/settings'
 function startTwitchObservers(): void {
   if (!window.location.hostname.endsWith('twitch.tv')) return
 
-  collectLiveData()
   startAdObserver()
-  startLiveDataObserver()
 }
 
 function onDomReady(callback: () => void): void {
@@ -26,7 +23,7 @@ function initContentScript(): void {
   registerMessageHandlers()
 
   onDomReady(() => {
-    setTimeout(startTwitchObservers, 1500)
+    startTwitchObservers()
   })
 }
 

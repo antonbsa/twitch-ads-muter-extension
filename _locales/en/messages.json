@@ -87,12 +87,20 @@
     "message": "Off",
     "description": "Generic off state"
   },
-  "statsLast14Days": {
-    "message": "$1 in the last 14 days",
-    "description": "Stat subtitle showing count in the last 14 days"
+  "statsLastDaysCount": {
+    "message": "$1 in the last $2 days",
+    "description": "Stat subtitle showing count in the configured recent-day window"
+  },
+  "statsLastDaysLabel": {
+    "message": "in the last $1 days",
+    "description": "Stat subtitle label for the configured recent-day window"
   },
   "statsAverage": {
     "message": "$1 avg",
     "description": "Stat subtitle showing average muted time"
+  },
+  "statsTodayDurationAverage": {
+    "message": "$1 ($2 avg)",
+    "description": "Stat subtitle showing today's total muted time and average"
   }
 }

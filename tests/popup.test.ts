@@ -81,19 +81,6 @@ it('should render stats from storage when channel data exists', async () => {
     { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,
   ])
 
-  vi.spyOn(chrome.tabs, 'sendMessage').mockImplementationOnce(async () => ({
-    ok: true,
-    data: {
-      channel: 'hayashii',
-      viewersText: null,
-      viewers: null,
-      liveTime: null,
-      url: 'https://www.twitch.tv/hayashii',
-      timestamp: new Date().toISOString(),
-    },
-    stats: __test.storageData[AD_MUTE_STATS_KEY],
-  }))
-
   vi.resetModules()
   await import('../src/popup/index')
 
@@ -133,19 +120,6 @@ it('should set stats to 0 when channel has no stored data', async () => {
     { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,
   ])
 
-  vi.spyOn(chrome.tabs, 'sendMessage').mockImplementationOnce(async () => ({
-    ok: true,
-    data: {
-      channel: 'hayashii',
-      viewersText: null,
-      viewers: null,
-      liveTime: null,
-      url: 'https://www.twitch.tv/hayashii',
-      timestamp: new Date().toISOString(),
-    },
-    stats: __test.storageData[AD_MUTE_STATS_KEY],
-  }))
-
   vi.resetModules()
   await import('../src/popup/index')
 
@@ -171,22 +145,38 @@ it('should set stats to 0 when channel has no stored data', async () => {
   expect(mutedTimeSub?.classList.contains('is-hidden')).toBe(true)
 })
 
-it('should disable audio toggle when mute ads is off', async () => {
+it('should render current channel and zero stats when storage is empty', async () => {
   vi.spyOn(chrome.tabs, 'query').mockImplementation(async () => [
     { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,
   ])
 
-  vi.spyOn(chrome.tabs, 'sendMessage').mockImplementationOnce(async () => ({
-    ok: true,
-    data: {
-      channel: 'hayashii',
-      viewersText: null,
-      viewers: null,
-      liveTime: null,
-      url: 'https://www.twitch.tv/hayashii',
-      timestamp: new Date().toISOString(),
-    },
-  }))
+  vi.resetModules()
+  await import('../src/popup/index')
+
+  await flushAsync()
+  await flushAsync()
+
+  const channel = document.getElementById('channel')?.textContent
+  const mutedToday = document.querySelector(
+    '#mutedToday .stat-value',
+  )?.textContent
+  const mutedTotal = document.querySelector(
+    '#mutedTotal .stat-value',
+  )?.textContent
+  const mutedTime = document.querySelector(
+    '#mutedTime .stat-value',
+  )?.textContent
+
+  expect(channel).toBe('hayashii')
+  expect(mutedToday).toBe('0')
+  expect(mutedTotal).toBe('0')
+  expect(mutedTime).toBe('0')
+})
+
+it('should disable audio toggle when mute ads is off', async () => {
+  vi.spyOn(chrome.tabs, 'query').mockImplementation(async () => [
+    { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,
+  ])
 
   await vi.resetModules()
   await import('../src/popup/index')
@@ -215,18 +205,6 @@ it('should update storage when toggles are clicked', async () => {
   vi.spyOn(chrome.tabs, 'query').mockImplementation(async () => [
     { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,
   ])
-
-  vi.spyOn(chrome.tabs, 'sendMessage').mockImplementationOnce(async () => ({
-    ok: true,
-    data: {
-      channel: 'hayashii',
-      viewersText: null,
-      viewers: null,
-      liveTime: null,
-      url: 'https://www.twitch.tv/hayashii',
-      timestamp: new Date().toISOString(),
-    },
-  }))
 
   const setSpy = vi.spyOn(chrome.storage.local, 'set')
 
@@ -319,12 +297,8 @@ it('should toggle language and persist preference', async () => {
 
 it('should re-translate channel status when language changes', async () => {
   vi.spyOn(chrome.tabs, 'query').mockImplementation(async () => [
-    { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,
+    { id: 1, url: 'https://example.com' } as chrome.tabs.Tab,
   ])
-
-  vi.spyOn(chrome.tabs, 'sendMessage').mockImplementationOnce(async () => ({
-    ok: false,
-  }))
 
   vi.resetModules()
   await import('../src/popup/index')

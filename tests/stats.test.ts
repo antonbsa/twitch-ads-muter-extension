@@ -21,7 +21,7 @@ it('should create stats and increments counts', async () => {
   await recordMutedAd('Hayashii')
 
   const stats = __test.storageData.adMuteStats as AdMuteStats
-  expect(stats.version).toBe(2)
+  expect(stats.version).toBe(3)
   expect(stats.allTimeTotal).toBe(1)
   expect(stats.allTimeMutedMs).toBe(0)
   expect(stats.channels).toHaveLength(1)
@@ -29,6 +29,7 @@ it('should create stats and increments counts', async () => {
   expect(stats.channels[0].allTimeCount).toBe(1)
   expect(stats.channels[0].allTimeMutedMs).toBe(0)
   expect(stats.channels[0].log).toHaveLength(1)
+  expect(stats.channels[0].muteLog).toEqual([])
 })
 
 it('should accumulate muted duration when provided', async () => {
@@ -40,4 +41,8 @@ it('should accumulate muted duration when provided', async () => {
   expect(stats.allTimeMutedMs).toBe(4_000)
   expect(stats.channels[0].allTimeCount).toBe(2)
   expect(stats.channels[0].allTimeMutedMs).toBe(4_000)
+  expect(stats.channels[0].muteLog).toEqual([
+    { timestamp: 1_700_000_000_000, durationMs: 2_500 },
+    { timestamp: 1_700_000_000_000, durationMs: 1_500 },
+  ])
 })
