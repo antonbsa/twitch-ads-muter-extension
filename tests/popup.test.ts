@@ -145,6 +145,34 @@ it('should set stats to 0 when channel has no stored data', async () => {
   expect(mutedTimeSub?.classList.contains('is-hidden')).toBe(true)
 })
 
+it('should render current channel and zero stats when storage is empty', async () => {
+  vi.spyOn(chrome.tabs, 'query').mockImplementation(async () => [
+    { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,
+  ])
+
+  vi.resetModules()
+  await import('../src/popup/index')
+
+  await flushAsync()
+  await flushAsync()
+
+  const channel = document.getElementById('channel')?.textContent
+  const mutedToday = document.querySelector(
+    '#mutedToday .stat-value',
+  )?.textContent
+  const mutedTotal = document.querySelector(
+    '#mutedTotal .stat-value',
+  )?.textContent
+  const mutedTime = document.querySelector(
+    '#mutedTime .stat-value',
+  )?.textContent
+
+  expect(channel).toBe('hayashii')
+  expect(mutedToday).toBe('0')
+  expect(mutedTotal).toBe('0')
+  expect(mutedTime).toBe('0')
+})
+
 it('should disable audio toggle when mute ads is off', async () => {
   vi.spyOn(chrome.tabs, 'query').mockImplementation(async () => [
     { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,

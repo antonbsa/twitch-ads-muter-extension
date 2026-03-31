@@ -41,7 +41,6 @@ const loadingClass = 'loading-dots'
 const RECENT_STATS_DAYS = 14
 
 let cachedStats: AdMuteStats | undefined
-let cachedStatsSerialized: string | null = null
 let currentChannel: string | null = null
 let channelStatusKey: string | null = null
 const localeController = createLocaleController(LANG_KEY)
@@ -190,13 +189,15 @@ function updateMuteStatsFromStats(
     return
   }
 
-  if (!stats || !Array.isArray(stats.channels)) {
+  if (stats && !Array.isArray(stats.channels)) {
     setStatsUnavailable()
     return
   }
 
   const key = channel.toLowerCase()
-  const channelStats = stats.channels.find((item) => item.channel === key)
+  const channelStats = (stats?.channels ?? []).find(
+    (item) => item.channel === key,
+  )
   if (!channelStats) {
     mutedTodayValueEl.textContent = '0'
     mutedTotalValueEl.textContent = '0'
@@ -269,13 +270,8 @@ async function loadStatsFromStorage(): Promise<void> {
   try {
     const stored = await chrome.storage.local.get(AD_MUTE_STATS_KEY)
     const stats = stored.adMuteStats as AdMuteStats | undefined
-    const serialized = stats ? JSON.stringify(stats) : null
-
-    if (serialized !== cachedStatsSerialized) {
-      cachedStatsSerialized = serialized
-      cachedStats = stats
-      updateMuteStatsFromStats(currentChannel, cachedStats)
-    }
+    cachedStats = stats
+    updateMuteStatsFromStats(currentChannel, cachedStats)
   } catch {
     setStatsUnavailable()
   }
