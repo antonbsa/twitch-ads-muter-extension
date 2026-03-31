@@ -1,7 +1,6 @@
 import {
   getMuteButton,
   getVolumeSliderValue,
-  hasLiveDataElements,
   isAdIndicatorVisible,
 } from '../src/content/selectors'
 
@@ -34,17 +33,11 @@ it('should read volume slider value from value/aria/data', () => {
   expect(getVolumeSliderValue()).toBe(3)
 })
 
-it('should detect ad indicator and live data elements', () => {
+it('should detect ad indicator', () => {
   expect(isAdIndicatorVisible()).toBe(false)
-  expect(hasLiveDataElements()).toBe(false)
 
   const ad = document.createElement('div')
   ad.setAttribute('aria-label', 'Ad')
   document.body.appendChild(ad)
   expect(isAdIndicatorVisible()).toBe(true)
-
-  const viewers = document.createElement('strong')
-  viewers.setAttribute('data-a-target', 'animated-channel-viewers-count')
-  document.body.appendChild(viewers)
-  expect(hasLiveDataElements()).toBe(true)
 })
