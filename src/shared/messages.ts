@@ -27,7 +27,8 @@ export function registerPopupLogHandler(
 ): void {
   chrome.runtime.onMessage.addListener((message: PopupLogMessage) => {
     if (message?.type !== 'popupLog') return
+
     handler(message)
-    return true
+    return undefined
   })
 }

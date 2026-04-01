@@ -173,6 +173,29 @@ it('should render current channel and zero stats when storage is empty', async (
   expect(mutedTime).toBe('0')
 })
 
+it('should not block popup rendering when popup logging hangs', async () => {
+  vi.spyOn(chrome.tabs, 'query').mockImplementation(async () => [
+    { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,
+  ])
+  vi.spyOn(chrome.tabs, 'sendMessage').mockImplementation(
+    () => new Promise(() => undefined),
+  )
+
+  vi.resetModules()
+  await import('../src/popup/index')
+
+  await flushAsync()
+  await flushAsync()
+
+  const channel = document.getElementById('channel')?.textContent
+  const mutedToday = document.querySelector(
+    '#mutedToday .stat-value',
+  )?.textContent
+
+  expect(channel).toBe('hayashii')
+  expect(mutedToday).toBe('0')
+})
+
 it('should disable audio toggle when mute ads is off', async () => {
   vi.spyOn(chrome.tabs, 'query').mockImplementation(async () => [
     { id: 1, url: 'https://www.twitch.tv/hayashii' } as chrome.tabs.Tab,

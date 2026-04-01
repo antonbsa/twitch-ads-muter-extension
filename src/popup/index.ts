@@ -281,17 +281,19 @@ async function syncActiveChannel(): Promise<void> {
   const tab = await getActiveTab()
   if (!tab) {
     currentChannel = null
-    await logToActiveTab('syncActiveChannel: no active tab', undefined, 'warn')
+    logToActiveTab('syncActiveChannel: no active tab', undefined, 'warn').catch(
+      () => {},
+    )
     setChannelStatus('channelNoActiveTab')
     setStatsUnavailable()
     return
   }
 
   currentChannel = getChannelFromTabUrl(tab.url)
-  await logToActiveTab('syncActiveChannel: active tab', {
+  logToActiveTab('syncActiveChannel: active tab', {
     url: tab.url,
     channel: currentChannel,
-  })
+  }).catch(() => {})
   if (!currentChannel) {
     setChannelStatus('channelCannotRead')
     setStatsUnavailable()
@@ -397,7 +399,7 @@ async function initPopup(): Promise<void> {
   await loadLocalePreference()
   await loadNotificationPreference()
   await loadMutePreference()
-  await logToActiveTab('Popup opened')
+  logToActiveTab('Popup opened').catch(() => {})
   await refreshPopupState()
 }
 
