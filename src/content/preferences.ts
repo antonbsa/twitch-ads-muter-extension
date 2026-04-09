@@ -1,4 +1,5 @@
 import { AD_MUTE_ENABLED_KEY, AUDIO_NOTIFICATION_KEY } from '../types'
+import { logger } from '../utils/logger'
 
 let muteAdsEnabled = true
 let audioNotificationsEnabled = true
@@ -13,10 +14,12 @@ export function isAudioEnabled(): boolean {
 
 export async function setupPreferences(): Promise<void> {
   try {
+    logger.log('Loading preferences from chrome.storage.local')
     const stored = await chrome.storage.local.get([
       AUDIO_NOTIFICATION_KEY,
       AD_MUTE_ENABLED_KEY,
     ])
+    logger.log('Preferences loaded from storage', stored)
 
     const audioValue = stored[AUDIO_NOTIFICATION_KEY]
     if (typeof audioValue === 'boolean') {
@@ -27,8 +30,9 @@ export async function setupPreferences(): Promise<void> {
     if (typeof muteValue === 'boolean') {
       muteAdsEnabled = muteValue
     }
-  } catch {
+  } catch (error) {
     // Ignore storage errors; keep defaults on.
+    logger.warn('Failed to load preferences from storage', error)
   }
 
   chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -43,5 +47,12 @@ export async function setupPreferences(): Promise<void> {
     if (audioChange && typeof audioChange.newValue === 'boolean') {
       audioNotificationsEnabled = audioChange.newValue
     }
+
+    logger.log('Preferences changed', {
+      areaName,
+      muteAdsEnabled,
+      audioNotificationsEnabled,
+      changes,
+    })
   })
 }

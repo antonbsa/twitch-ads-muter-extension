@@ -23,3 +23,29 @@ it('should log with prefix when debug enabled', () => {
 
   expect(logSpy).toHaveBeenCalledWith('[Twitch ads muter]', 'hello')
 })
+
+it('should print warnings even when debug is disabled', () => {
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+  logger.warn('problem')
+
+  expect(warnSpy).toHaveBeenCalledWith('[Twitch ads muter]', 'problem')
+})
+
+it('should flush buffered logs when debug becomes enabled', () => {
+  const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+  logger.log('before debug')
+  setDebugEnabled(true)
+
+  expect(logSpy).toHaveBeenNthCalledWith(
+    1,
+    '[Twitch ads muter]',
+    'Debug logging enabled',
+  )
+  expect(logSpy).toHaveBeenNthCalledWith(
+    2,
+    '[Twitch ads muter]',
+    'before debug',
+  )
+})
