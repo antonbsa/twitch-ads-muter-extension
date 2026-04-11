@@ -24,10 +24,12 @@ export async function playSound(path: AudioFilesKey): Promise<void> {
 
   try {
     const url = chrome.runtime.getURL(AUDIO_FILES[path])
+
     logger.log('Playing audio notification', { path, url })
     const audio = new Audio(url)
     audio.volume = AUDIO_VOLUME
     await audio.play()
+
     logger.log('Audio notification played successfully', { path })
   } catch (error) {
     // Silently ignore "Extension context invalidated" errors (happens when extension is reloaded)
