@@ -1,7 +1,7 @@
 import { startAdObserver } from './content/ads'
-import { registerMessageHandlers } from './content/messages'
 import { setupPreferences } from './content/preferences'
 import { loadSettings } from './content/settings'
+import { registerPopupLogHandler } from './shared/messages'
 import { logger } from './utils/logger'
 
 function startTwitchObservers(): void {
@@ -31,7 +31,10 @@ function initContentScript(): void {
   })
   loadSettings()
   setupPreferences()
-  registerMessageHandlers()
+  registerPopupLogHandler((message) => {
+    const level = message.level ?? 'log'
+    logger[level](message.message, message.data)
+  })
 
   onDomReady(() => {
     logger.log('DOM ready callback fired')
