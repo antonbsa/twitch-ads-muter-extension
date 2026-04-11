@@ -1,5 +1,14 @@
+import { logger } from '../utils/logger'
+
+const videoRefSelector = 'div[data-a-target="video-ref"]'
+let lastPrimarySelectorWarningSignature: string | null = null
+
 export const SELECTORS = {
-  adIndicator: '[aria-label="Ad"]',
+  adIndicators: [
+    'span[data-a-target="video-ad-label"]',
+    'span[data-a-target="video-ad-countdown"]',
+  ],
+  adIndicatorFallbackButton: `${videoRefSelector} button[aria-label*="Ad"]`,
   muteButton: 'button[data-a-target="player-mute-unmute-button"]',
   sliderVolume: 'input[id^="player-volume-slider"]',
 }
@@ -23,6 +32,40 @@ export function getVolumeSliderValue(): number | null {
   return value
 }
 
-export function isAdIndicatorVisible(): boolean {
-  return Boolean(document.querySelector(SELECTORS.adIndicator))
+export function isAnyAdIndicatorPresent(): boolean {
+  const primarySelectorMatches = SELECTORS.adIndicators.map((selector) => ({
+    selector,
+    matched: document.querySelector(selector) !== null,
+  }))
+  const hasKnownAdIndicator = primarySelectorMatches.some(
+    ({ matched }) => matched,
+  )
+
+  const fallbackButton = document.querySelector<HTMLButtonElement>(
+    SELECTORS.adIndicatorFallbackButton,
+  )
+  const label = fallbackButton?.querySelector('div > p')?.textContent?.trim()
+  const fallbackMatched = label === 'Ad'
+
+  const missingPrimarySelectors = primarySelectorMatches.filter(
+    ({ matched }) => !matched,
+  )
+  if (missingPrimarySelectors.length === 0) {
+    lastPrimarySelectorWarningSignature = null
+  } else {
+    const warningSignature = JSON.stringify({
+      primarySelectorMatches,
+      fallbackMatched,
+    })
+    if (warningSignature !== lastPrimarySelectorWarningSignature) {
+      lastPrimarySelectorWarningSignature = warningSignature
+      logger.warn('Primary ad selector health degraded', {
+        primarySelectorMatches,
+        fallbackSelector: SELECTORS.adIndicatorFallbackButton,
+        fallbackMatched,
+      })
+    }
+  }
+
+  return hasKnownAdIndicator || fallbackMatched
 }

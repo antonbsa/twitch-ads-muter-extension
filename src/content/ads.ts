@@ -1,4 +1,4 @@
-import { isAdIndicatorVisible } from './selectors'
+import { isAnyAdIndicatorPresent } from './selectors'
 import { ensureMuted, ensureUnmuted } from './mute'
 import { recordMutedAd } from './stats'
 import { getChannelFromUrl } from './live-data'
@@ -22,7 +22,7 @@ async function handleAdState(): Promise<void> {
     pendingMuteStartedAt = null
     return
   }
-  const active = isAdIndicatorVisible()
+  const active = isAnyAdIndicatorPresent()
 
   if (active !== adActive) {
     logger.log('Ad state changed', {
@@ -70,7 +70,11 @@ async function handleAdState(): Promise<void> {
             channel: pendingChannel,
             durationMs,
           })
-          recordMutedAd(pendingChannel, durationMs)
+          await recordMutedAd(pendingChannel, durationMs)
+          logger.log('Muted ad stats recording completed', {
+            channel: pendingChannel,
+            durationMs,
+          })
         }
       }
       mutedByExtension = false
