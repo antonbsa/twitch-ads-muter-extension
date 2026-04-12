@@ -1,5 +1,6 @@
 import type { AdMuteStats } from '../types'
 import { AD_MUTE_STATS_KEY } from '../types'
+import { logger } from '../utils/logger'
 
 export async function recordMutedAd(
   channel: string | null,
@@ -14,6 +15,10 @@ export async function recordMutedAd(
       : null
 
   try {
+    logger.log('Loading muted ad stats from storage', {
+      key,
+      durationMs: resolvedDurationMs,
+    })
     const stored = await chrome.storage.local.get(AD_MUTE_STATS_KEY)
     const stats = normalizeMuteStats(stored[AD_MUTE_STATS_KEY])
     const channelStats =
@@ -41,8 +46,19 @@ export async function recordMutedAd(
     stats.lastPrunedAt = maybePruneStats(stats, pruneBefore, timestamp)
 
     await chrome.storage.local.set({ [AD_MUTE_STATS_KEY]: stats })
-  } catch {
-    // Ignore storage errors.
+    logger.log('Muted ad stats saved', {
+      key,
+      channelStats,
+      allTimeTotal: stats.allTimeTotal,
+      allTimeMutedMs: stats.allTimeMutedMs ?? 0,
+    })
+  } catch (error) {
+    logger.error('Failed to persist muted ad stats', {
+      channel,
+      key,
+      durationMs,
+      error,
+    })
   }
 }
 

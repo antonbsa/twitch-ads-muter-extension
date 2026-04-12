@@ -1,46 +1,44 @@
-import { isAdIndicatorVisible } from './selectors'
+import { isAnyAdIndicatorPresent } from './selectors'
 import { ensureMuted, ensureUnmuted } from './mute'
 import { recordMutedAd } from './stats'
 import { getChannelFromUrl } from './live-data'
 import { isMuteAdsEnabled } from './preferences'
 import { logger } from '../utils/logger'
-let adActive = false
-let mutedByExtension = false
-let pendingMuteCount = false
+
+// State variables to track ad and mute status
+let isAdActive = false
+let isMutedByExtension = false
 let pendingChannel: string | null = null
 let pendingMuteStartedAt: number | null = null
 
 async function handleAdState(): Promise<void> {
   if (!isMuteAdsEnabled()) {
-    if (adActive || mutedByExtension) {
+    if (isAdActive || isMutedByExtension) {
       logger.log('Ad mute disabled while ad state was active; resetting state')
     }
-    adActive = false
-    mutedByExtension = false
-    pendingMuteCount = false
+    isAdActive = false
+    isMutedByExtension = false
     pendingChannel = null
     pendingMuteStartedAt = null
     return
   }
-  const active = isAdIndicatorVisible()
+  const isAdDetected = isAnyAdIndicatorPresent()
 
-  if (active !== adActive) {
+  if (isAdDetected !== isAdActive) {
     logger.log('Ad state changed', {
-      previous: adActive,
-      next: active,
+      previous: isAdActive,
+      next: isAdDetected,
     })
-    adActive = active
-    if (adActive) {
-      mutedByExtension = false
-      pendingMuteCount = false
+    isAdActive = isAdDetected
+    if (isAdActive) {
+      isMutedByExtension = false
       pendingChannel = getChannelFromUrl()
       pendingMuteStartedAt = null
       logger.log('Ad detected', {
         channel: pendingChannel,
       })
       const didMute = await ensureMuted()
-      mutedByExtension = didMute
-      pendingMuteCount = didMute
+      isMutedByExtension = didMute
       if (didMute) {
         pendingMuteStartedAt = Date.now()
       }
@@ -50,18 +48,16 @@ async function handleAdState(): Promise<void> {
       })
     } else {
       logger.log('Ad cleared', {
-        mutedByExtension,
-        pendingMuteCount,
+        mutedByExtension: isMutedByExtension,
         pendingChannel,
       })
-      if (mutedByExtension) {
+      if (isMutedByExtension) {
         const didUnmute = await ensureUnmuted()
         logger.log('Unmute attempt finished', {
           didUnmute,
-          pendingMuteCount,
           pendingChannel,
         })
-        if (didUnmute && pendingMuteCount) {
+        if (didUnmute) {
           const durationMs =
             pendingMuteStartedAt !== null
               ? Date.now() - pendingMuteStartedAt
@@ -70,11 +66,14 @@ async function handleAdState(): Promise<void> {
             channel: pendingChannel,
             durationMs,
           })
-          recordMutedAd(pendingChannel, durationMs)
+          await recordMutedAd(pendingChannel, durationMs)
+          logger.log('Muted ad stats recording completed', {
+            channel: pendingChannel,
+            durationMs,
+          })
         }
       }
-      mutedByExtension = false
-      pendingMuteCount = false
+      isMutedByExtension = false
       pendingChannel = null
       pendingMuteStartedAt = null
     }

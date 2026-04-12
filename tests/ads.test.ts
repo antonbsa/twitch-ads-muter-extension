@@ -1,13 +1,13 @@
 import { vi } from 'vitest'
 import { startAdObserver } from '../src/content/ads'
-import { isAdIndicatorVisible } from '../src/content/selectors'
+import { isAnyAdIndicatorPresent } from '../src/content/selectors'
 import { ensureMuted, ensureUnmuted } from '../src/content/mute'
 import { recordMutedAd } from '../src/content/stats'
 import { getChannelFromUrl } from '../src/content/live-data'
 import { isMuteAdsEnabled } from '../src/content/preferences'
 
 vi.mock('../src/content/selectors', () => ({
-  isAdIndicatorVisible: vi.fn(),
+  isAnyAdIndicatorPresent: vi.fn(),
 }))
 
 vi.mock('../src/content/mute', () => ({
@@ -65,7 +65,7 @@ afterEach(() => {
 })
 
 it('should record muted ad only after unmute happens', async () => {
-  const adIndicatorMock = vi.mocked(isAdIndicatorVisible)
+  const adIndicatorMock = vi.mocked(isAnyAdIndicatorPresent)
   const ensureMutedMock = vi.mocked(ensureMuted)
   const ensureUnmutedMock = vi.mocked(ensureUnmuted)
   const recordMutedAdMock = vi.mocked(recordMutedAd)

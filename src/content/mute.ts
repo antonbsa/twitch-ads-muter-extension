@@ -14,6 +14,7 @@ export async function ensureMuted(): Promise<boolean> {
     logger.warn('Mute button not found')
     return false
   }
+
   const isMuted = getIsMuted()
   logger.log('ensureMuted state', { isMuted })
   if (isMuted === true) {
@@ -33,6 +34,7 @@ export async function ensureUnmuted(): Promise<boolean> {
     logger.warn('Mute button not found while trying to unmute')
     return false
   }
+
   const isMuted = getIsMuted()
   logger.log('ensureUnmuted state', { isMuted })
   if (isMuted === false) {
