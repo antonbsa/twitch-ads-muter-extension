@@ -4,80 +4,91 @@ import { recordMutedAd } from './stats'
 import { getChannelFromUrl } from './live-data'
 import { isMuteAdsEnabled } from './preferences'
 import { logger } from '../utils/logger'
+import { decideIntent, type AdIntent, type AdState } from './ad-state'
 
-// State variables to track ad and mute status
-let isAdActive = false
-let isMutedByExtension = false
-let pendingChannel: string | null = null
-let pendingMuteStartedAt: number | null = null
+const MUTATION_THROTTLE_MS = 250
 
-async function handleAdState(): Promise<void> {
-  if (!isMuteAdsEnabled()) {
-    if (isAdActive || isMutedByExtension) {
-      logger.log('Ad mute disabled while ad state was active; resetting state')
-    }
-    isAdActive = false
-    isMutedByExtension = false
-    pendingChannel = null
-    pendingMuteStartedAt = null
-    return
-  }
-  const isAdDetected = isAnyAdIndicatorPresent()
+let state: AdState = { phase: 'idle' }
+let queue: Promise<void> = Promise.resolve()
+let throttleTimer: ReturnType<typeof setTimeout> | null = null
 
-  if (isAdDetected !== isAdActive) {
-    logger.log('Ad state changed', {
-      previous: isAdActive,
-      next: isAdDetected,
+async function startMute(): Promise<AdState> {
+  const channel = getChannelFromUrl()
+  logger.log('Ad detected', { channel })
+  const didMute = await ensureMuted()
+  logger.log('Mute attempt finished', { didMute, channel })
+  return didMute
+    ? { phase: 'muted', channel, since: Date.now() }
+    : { phase: 'ad' }
+}
+
+async function stopAndUnmute(
+  current: Extract<AdState, { phase: 'muted' }>,
+): Promise<AdState> {
+  const didUnmute = await ensureUnmuted()
+  logger.log('Unmute attempt finished', { didUnmute, channel: current.channel })
+  if (didUnmute) {
+    const durationMs = Date.now() - current.since
+    await recordMutedAd(current.channel, durationMs)
+    logger.log('Muted ad stats recorded', {
+      channel: current.channel,
+      durationMs,
     })
-    isAdActive = isAdDetected
-    if (isAdActive) {
-      isMutedByExtension = false
-      pendingChannel = getChannelFromUrl()
-      pendingMuteStartedAt = null
-      logger.log('Ad detected', {
-        channel: pendingChannel,
-      })
-      const didMute = await ensureMuted()
-      isMutedByExtension = didMute
-      if (didMute) {
-        pendingMuteStartedAt = Date.now()
-      }
-      logger.log('Mute attempt finished', {
-        didMute,
-        pendingChannel,
-      })
-    } else {
-      logger.log('Ad cleared', {
-        mutedByExtension: isMutedByExtension,
-        pendingChannel,
-      })
-      if (isMutedByExtension) {
-        const didUnmute = await ensureUnmuted()
-        logger.log('Unmute attempt finished', {
-          didUnmute,
-          pendingChannel,
-        })
-        if (didUnmute) {
-          const durationMs =
-            pendingMuteStartedAt !== null
-              ? Date.now() - pendingMuteStartedAt
-              : undefined
-          logger.log('Recording muted ad stats', {
-            channel: pendingChannel,
-            durationMs,
-          })
-          await recordMutedAd(pendingChannel, durationMs)
-          logger.log('Muted ad stats recording completed', {
-            channel: pendingChannel,
-            durationMs,
-          })
-        }
-      }
-      isMutedByExtension = false
-      pendingChannel = null
-      pendingMuteStartedAt = null
-    }
   }
+  return { phase: 'idle' }
+}
+
+async function applyIntent(
+  intent: AdIntent,
+  current: AdState,
+): Promise<AdState> {
+  switch (intent) {
+    case 'stay':
+      return current
+    case 'reset':
+      return { phase: 'idle' }
+    case 'startMute':
+      return startMute()
+    case 'stopAndUnmute':
+      if (current.phase !== 'muted') {
+        throw new Error(
+          `stopAndUnmute intent requires muted phase, got ${current.phase}`,
+        )
+      }
+      return stopAndUnmute(current)
+  }
+}
+
+async function tick(): Promise<void> {
+  const enabled = isMuteAdsEnabled()
+  const adDetected = enabled && isAnyAdIndicatorPresent()
+  const intent = decideIntent(state, adDetected, enabled)
+
+  if (intent === 'stay') return
+
+  logger.log('Ad state transition', {
+    from: state,
+    adDetected,
+    enabled,
+    intent,
+  })
+  try {
+    state = await applyIntent(intent, state)
+  } catch (error) {
+    logger.error('Ad state tick failed', { state, intent, error })
+  }
+}
+
+function scheduleTick(): void {
+  queue = queue.then(tick)
+}
+
+function onMutation(): void {
+  if (throttleTimer) return
+  throttleTimer = setTimeout(() => {
+    throttleTimer = null
+    scheduleTick()
+  }, MUTATION_THROTTLE_MS)
 }
 
 export function startAdObserver(): void {
@@ -85,7 +96,7 @@ export function startAdObserver(): void {
 
   logger.log('Creating MutationObserver for ad detection')
   const observer = new MutationObserver(() => {
-    handleAdState()
+    onMutation()
   })
 
   observer.observe(document.documentElement, {
@@ -95,5 +106,5 @@ export function startAdObserver(): void {
   })
 
   logger.log('MutationObserver attached; performing initial ad state check')
-  handleAdState()
+  scheduleTick()
 }

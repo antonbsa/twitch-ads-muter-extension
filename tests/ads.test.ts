@@ -27,6 +27,8 @@ vi.mock('../src/content/preferences', () => ({
   isMuteAdsEnabled: vi.fn(),
 }))
 
+const THROTTLE_MS = 300
+
 let observerCallback: MutationCallback | null = null
 
 class MockMutationObserver {
@@ -46,12 +48,17 @@ class MockMutationObserver {
   }
 }
 
-async function flushAsync(): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 0))
+async function flushMicrotasks(): Promise<void> {
+  await vi.advanceTimersByTimeAsync(0)
+}
+
+async function flushThrottle(): Promise<void> {
+  await vi.advanceTimersByTimeAsync(THROTTLE_MS)
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.useFakeTimers()
   observerCallback = null
   vi.stubGlobal('location', { hostname: 'www.twitch.tv' } as Location)
   ;(
@@ -60,6 +67,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
@@ -79,6 +87,8 @@ it('should record muted ad only after unmute happens', async () => {
 
   vi.spyOn(Date, 'now').mockReturnValueOnce(1_000).mockReturnValueOnce(4_000)
 
+  // 1st call: initial check performed by startAdObserver (no ad yet).
+  // 2nd/3rd calls: throttled checks triggered by mutation events below.
   adIndicatorMock
     .mockReturnValueOnce(false)
     .mockReturnValueOnce(true)
@@ -86,17 +96,37 @@ it('should record muted ad only after unmute happens', async () => {
 
   startAdObserver()
   expect(observerCallback).not.toBeNull()
+  await flushMicrotasks()
 
   observerCallback?.([], observerCallback as unknown as MutationObserver)
-  await flushAsync()
+  await flushThrottle()
 
   expect(ensureMutedMock).toHaveBeenCalledTimes(1)
   expect(recordMutedAdMock).not.toHaveBeenCalled()
 
   observerCallback?.([], observerCallback as unknown as MutationObserver)
-  await flushAsync()
+  await flushThrottle()
 
   expect(ensureUnmutedMock).toHaveBeenCalledTimes(1)
   expect(recordMutedAdMock).toHaveBeenCalledTimes(1)
   expect(recordMutedAdMock).toHaveBeenCalledWith('hayashii', 3_000)
+})
+
+it('should coalesce bursts of mutations into a single check', async () => {
+  const adIndicatorMock = vi.mocked(isAnyAdIndicatorPresent)
+  const isMuteAdsEnabledMock = vi.mocked(isMuteAdsEnabled)
+
+  isMuteAdsEnabledMock.mockReturnValue(true)
+  adIndicatorMock.mockReturnValue(false)
+
+  startAdObserver()
+  await flushMicrotasks()
+  adIndicatorMock.mockClear()
+
+  for (let i = 0; i < 20; i++) {
+    observerCallback?.([], observerCallback as unknown as MutationObserver)
+  }
+  await flushThrottle()
+
+  expect(adIndicatorMock).toHaveBeenCalledTimes(1)
 })
