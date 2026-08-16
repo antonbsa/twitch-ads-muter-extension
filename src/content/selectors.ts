@@ -32,6 +32,11 @@ export function getVolumeSliderValue(): number | null {
   return value
 }
 
+/**
+ * Detects whether an ad is currently playing, falling back to a secondary
+ * heuristic if the primary selectors stop matching.
+ * @returns Whether an ad indicator is present.
+ */
 export function isAnyAdIndicatorPresent(): boolean {
   const primarySelectorMatches = SELECTORS.adIndicators.map((selector) => ({
     selector,

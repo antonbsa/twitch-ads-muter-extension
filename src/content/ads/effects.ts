@@ -4,6 +4,12 @@ import { getChannelFromUrl } from '../live-data'
 import { logger } from '../../utils/logger'
 import type { AdIntent, AdState } from './state'
 
+/**
+ * Executes the side effect for the given intent and returns the next state.
+ * @param intent The intent to execute.
+ * @param current The current ad state.
+ * @returns The resulting ad state.
+ */
 export async function applyIntent(
   intent: AdIntent,
   current: AdState,

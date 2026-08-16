@@ -10,6 +10,9 @@ let state: AdState = { phase: 'idle' }
 let queue: Promise<void> = Promise.resolve()
 let throttleTimer: ReturnType<typeof setTimeout> | null = null
 
+/**
+ * Runs one check: reads the current inputs, decides the intent, and applies it.
+ */
 async function tick(): Promise<void> {
   const enabled = isMuteAdsEnabled()
   const adDetected = enabled && isAnyAdIndicatorPresent()
@@ -30,10 +33,16 @@ async function tick(): Promise<void> {
   }
 }
 
+/**
+ * Chains the next tick onto the queue so ticks never run concurrently.
+ */
 function scheduleTick(): void {
   queue = queue.then(tick)
 }
 
+/**
+ * Coalesces bursts of mutation events into a single tick per MUTATION_THROTTLE_MS.
+ */
 function onMutation(): void {
   if (throttleTimer) return
   throttleTimer = setTimeout(() => {

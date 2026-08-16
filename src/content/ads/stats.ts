@@ -2,6 +2,11 @@ import type { AdMuteStats } from '../../types'
 import { AD_MUTE_STATS_KEY } from '../../types'
 import { logger } from '../../utils/logger'
 
+/**
+ * Persists one ad-mute event into per-channel stats in chrome.storage.local.
+ * @param channel The channel the ad played on, if known.
+ * @param durationMs How long the ad was muted for, if known.
+ */
 export async function recordMutedAd(
   channel: string | null,
   durationMs?: number,
@@ -81,6 +86,11 @@ function createChannelStats(channel: string): AdMuteStats['channels'][number] {
   }
 }
 
+/**
+ * Coerces a raw storage value into a valid AdMuteStats, defaulting to empty stats.
+ * @param value The raw value read from storage.
+ * @returns A valid AdMuteStats.
+ */
 function normalizeMuteStats(value: unknown): AdMuteStats {
   if (!value || typeof value !== 'object') {
     return createEmptyStats()
@@ -132,6 +142,13 @@ function normalizeMuteStats(value: unknown): AdMuteStats {
   return createEmptyStats()
 }
 
+/**
+ * Prunes log entries older than pruneBefore, at most once per day.
+ * @param stats The stats to prune in place.
+ * @param pruneBefore Entries older than this timestamp are removed.
+ * @param now The current timestamp.
+ * @returns The timestamp of the last prune.
+ */
 function maybePruneStats(
   stats: AdMuteStats,
   pruneBefore: number,
