@@ -1,4 +1,4 @@
-import { startAdObserver } from './content/ads'
+import { startAdObserver } from './content/ads/observer'
 import { setupPreferences } from './content/preferences'
 import { loadSettings } from './content/settings'
 import { registerPopupLogHandler } from './shared/messages'

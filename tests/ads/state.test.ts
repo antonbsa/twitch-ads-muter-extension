@@ -1,4 +1,4 @@
-import { decideIntent, type AdState } from '../src/content/ad-state'
+import { decideIntent, type AdState } from '../../src/content/ads/state'
 
 const idle: AdState = { phase: 'idle' }
 const ad: AdState = { phase: 'ad' }

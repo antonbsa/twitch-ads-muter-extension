@@ -1,29 +1,29 @@
 import { vi } from 'vitest'
-import { startAdObserver } from '../src/content/ads'
-import { isAnyAdIndicatorPresent } from '../src/content/selectors'
-import { ensureMuted, ensureUnmuted } from '../src/content/mute'
-import { recordMutedAd } from '../src/content/stats'
-import { getChannelFromUrl } from '../src/content/live-data'
-import { isMuteAdsEnabled } from '../src/content/preferences'
+import { startAdObserver } from '../../src/content/ads/observer'
+import { isAnyAdIndicatorPresent } from '../../src/content/selectors'
+import { ensureMuted, ensureUnmuted } from '../../src/content/mute'
+import { recordMutedAd } from '../../src/content/ads/stats'
+import { getChannelFromUrl } from '../../src/content/live-data'
+import { isMuteAdsEnabled } from '../../src/content/preferences'
 
-vi.mock('../src/content/selectors', () => ({
+vi.mock('../../src/content/selectors', () => ({
   isAnyAdIndicatorPresent: vi.fn(),
 }))
 
-vi.mock('../src/content/mute', () => ({
+vi.mock('../../src/content/mute', () => ({
   ensureMuted: vi.fn(),
   ensureUnmuted: vi.fn(),
 }))
 
-vi.mock('../src/content/stats', () => ({
+vi.mock('../../src/content/ads/stats', () => ({
   recordMutedAd: vi.fn(),
 }))
 
-vi.mock('../src/content/live-data', () => ({
+vi.mock('../../src/content/live-data', () => ({
   getChannelFromUrl: vi.fn(),
 }))
 
-vi.mock('../src/content/preferences', () => ({
+vi.mock('../../src/content/preferences', () => ({
   isMuteAdsEnabled: vi.fn(),
 }))
 
