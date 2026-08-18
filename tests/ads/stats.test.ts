@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
-import { recordMutedAd } from '../src/content/stats'
-import type { AdMuteStats } from '../src/types'
+import { recordMutedAd } from '../../src/content/ads/stats'
+import type { AdMuteStats } from '../../src/types'
 
 declare const __test: {
   storageData: Record<string, unknown>

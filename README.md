@@ -37,6 +37,7 @@ Ad blockers never worked fine for me (and I understand the importance of it for 
 - Open Chrome and go to `chrome://extensions`.
 - Enable Developer mode (top right).
 - Click "Load unpacked" and select the project root folder (the manifest references `dist/` outputs).
+- To update an already installed version: pull the latest changes, run `npm run build`, reload the extension in `chrome://extensions`, then refresh any open Twitch tabs (content scripts are only injected on page load).
 
 **Development**:
 - Make changes in `src/`.
@@ -44,3 +45,4 @@ Ad blockers never worked fine for me (and I understand the importance of it for 
 - If you are not using watch mode, run `npm run build` after changes.
 - If you need local runtime overrides, create or edit `settings.json` in the project root.
 - Reload the extension in `chrome://extensions` to pick up the latest build.
+- Refresh any open Twitch tabs - content scripts are only injected on page load, so a reloaded extension won't affect tabs already open.

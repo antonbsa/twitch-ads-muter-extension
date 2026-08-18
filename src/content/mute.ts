@@ -8,6 +8,10 @@ function getIsMuted(): boolean | null {
   return sliderValue === 0
 }
 
+/**
+ * Mutes the player if it isn't already muted.
+ * @returns Whether a click was actually performed.
+ */
 export async function ensureMuted(): Promise<boolean> {
   const button = getMuteButton()
   if (!button) {
@@ -28,6 +32,10 @@ export async function ensureMuted(): Promise<boolean> {
   return true
 }
 
+/**
+ * Unmutes the player if it isn't already unmuted.
+ * @returns Whether a click was actually performed.
+ */
 export async function ensureUnmuted(): Promise<boolean> {
   const button = getMuteButton()
   if (!button) {
